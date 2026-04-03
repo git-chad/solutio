@@ -1,0 +1,198 @@
+/***
+    The new CSS reset - version 1.11.3 (last updated 25.08.2024)
+    GitHub page: https://github.com/elad2412/the-new-css-reset
+***/
+
+*:where(
+    :not(
+        html,
+        iframe,
+        canvas,
+        img,
+        svg,
+        video,
+        audio,
+        dialog,
+        vercel-live-feedback,
+        nextjs-portal,
+        :where(select, option)
+      ):not(svg *, symbol *)
+  ) {
+  all: unset;
+  display: revert;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  --scrollbar-gutter: 0px;
+  -moz-text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  scrollbar-gutter: stable;
+  text-rendering: optimizeLegibility;
+  text-size-adjust: none;
+
+  &.lenis-stopped {
+    --scrollbar-gutter: var(--scrollbar-width);
+  }
+}
+
+html.overflow-hidden {
+  overflow: hidden;
+  touch-action: none;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+  cursor: revert;
+}
+
+ol,
+ul,
+menu,
+summary {
+  list-style: none;
+}
+
+ol {
+  counter-reset: revert;
+}
+
+img,
+video,
+audio {
+  max-block-size: 100%;
+  max-inline-size: 100%;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+input,
+textarea {
+  -webkit-user-select: auto;
+}
+
+textarea {
+  white-space: revert;
+}
+
+meter {
+  -webkit-appearance: revert;
+  appearance: revert;
+}
+
+:where(pre) {
+  all: revert;
+  box-sizing: border-box;
+}
+
+::placeholder {
+  color: unset;
+}
+
+:where([hidden]) {
+  display: none;
+}
+
+:where([contenteditable]:not([contenteditable="false"])) {
+  -moz-user-modify: read-write;
+  -webkit-line-break: after-white-space;
+  -webkit-user-modify: read-write;
+  -webkit-user-select: auto;
+  overflow-wrap: break-word;
+}
+
+:where([draggable="true"]) {
+  -webkit-user-drag: element;
+}
+
+:where(dialog:modal) {
+  all: revert;
+  box-sizing: border-box;
+}
+
+::-webkit-details-marker {
+  display: none;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+:where(input[type="file"]) {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: default;
+}
+
+body {
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--color-primary);
+  color: var(--color-secondary);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overscroll-behavior: none;
+}
+
+*::selection {
+  background-color: var(--color-contrast);
+  color: var(--color-primary);
+}
+
+svg.icon {
+  path[fill],
+  rect[fill],
+  circle[fill] {
+    fill: currentColor;
+  }
+
+  path[stroke],
+  rect[stroke],
+  circle[stroke] {
+    stroke: currentColor;
+  }
+}
+
+.link {
+  @media (--hover) {
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-contrast);
+}
+
+html.scrollbar-grabbing,
+img {
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button {
+  cursor: pointer;
+  text-box-edge: cap alphabetic;
+  text-box-trim: both;
+  user-select: none;
+}
+
+html.screenshot {
+  *:not(:has(canvas), canvas, :has(#orchestra), #orchestra, #orchestra *) {
+    opacity: 0 !important;
+  }
+}
