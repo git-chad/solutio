@@ -1,0 +1,57 @@
+{
+  "headline": "The value lies in how. We know how.",
+  "subheadline": "We advise companies, individuals and families on complex tax and financial decisions, combining experience, judgment and strategic insight to protect and enhance value.",
+  "callToAction": {
+    "primary": "Schedule a conversation",
+    "secondary": "Learn more"
+  },
+  "microcopy": {
+    "tagline": "Confidential. Direct. No intermediaries.",
+    "seniority": "Seniority in every interaction."
+  },
+  "sections": [
+    {
+      "id": "who-we-are",
+      "title": "Who We Are",
+      "content": "At Solutio, we bring together more than four decades of experience in tax and financial advisory with a strategic perspective focused on both business and personal wealth.\n\nWe were founded on a clear conviction: today’s tax challenges —for companies and individuals alike— require more than technical expertise. They demand judgment, vision and the ability to anticipate.\n\nOur team combines backgrounds in top-tier advisory firms and senior leadership roles within multinational organizations, allowing us to understand both corporate dynamics and the needs of individuals and families with complex wealth structures."
+    },
+    {
+      "id": "what-we-do",
+      "title": "What We Do",
+      "content": "We advise companies, individuals and families on high-impact tax and financial decisions, both locally and internationally.",
+      "services": [
+        "Strategic tax planning",
+        "Corporate and wealth structuring and restructuring",
+        "Personal and family investment advisory",
+        "Tax risk assessment",
+        "Succession planning and wealth organization",
+        "Support in audits and tax controversy matters"
+      ],
+      "closing": "We engage where impact matters: decisions that affect value, exposure and continuity."
+    },
+    {
+      "id": "how-we-work",
+      "title": "How We Work",
+      "content": "At Solutio, we do not operate in volume. We think. We design. We advise.\n\nWe work directly and confidentially with our clients —both corporate teams and individuals/families— tailoring each solution to the specific nature of the situation.",
+      "approach": [
+        "Deep technical analysis",
+        "Strategic perspective",
+        "Close and confidential interaction",
+        "A fully tailored approach"
+      ],
+      "closing": "We act as trusted advisors in decisions that go beyond the immediate."
+    },
+    {
+      "id": "value-proposition",
+      "title": "Our Value Proposition",
+      "content": "In an increasingly complex tax environment, the real difference lies in the quality of judgment and in the ability to integrate corporate and personal perspectives.",
+      "offers": [
+        "Senior-level involvement in every interaction",
+        "Independent judgment",
+        "A practical, results-oriented approach",
+        "A comprehensive understanding of business and wealth"
+      ],
+      "closing": "We solve complex problems because we know how. And beyond that, we help preserve value, bring clarity to the present and shape the future."
+    }
+  ]
+}

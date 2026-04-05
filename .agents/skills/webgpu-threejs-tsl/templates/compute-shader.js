@@ -17,22 +17,13 @@ import * as THREE from 'three/webgpu';
 import {
   Fn,
   If,
-  Loop,
   float,
-  int,
-  vec2,
   vec3,
-  vec4,
   color,
   uniform,
   instancedArray,
   instanceIndex,
   hash,
-  time,
-  deltaTime,
-  select,  // Use for conditional value selection
-  max,
-  clamp
 } from 'three/tsl';
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -161,8 +152,8 @@ const computeUpdate = Fn(() => {
  * Optional: Additional compute pass (e.g., for interactions)
  */
 const computeInteraction = Fn(() => {
-  const position = positions.element(instanceIndex);
-  const velocity = velocities.element(instanceIndex);
+  const _position = positions.element(instanceIndex);
+  const _velocity = velocities.element(instanceIndex);
 
   // ========================================
   // IMPLEMENT INTERACTION LOGIC HERE
@@ -191,7 +182,7 @@ function createVisualization(scene) {
   return createInstancedVisualization(scene);
 }
 
-function createPointsVisualization(scene) {
+function _createPointsVisualization(scene) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute(
     'position',
@@ -254,8 +245,11 @@ function createInstancedVisualization(scene) {
 // MAIN SETUP
 // ============================================
 
-let camera, scene, renderer, controls;
-let visualization;
+let camera;
+let scene;
+let renderer;
+let controls;
+let _visualization;
 
 async function init() {
   // Scene
@@ -293,7 +287,7 @@ async function init() {
   renderer.compute(computeInit);
 
   // Create visualization
-  visualization = createVisualization(scene);
+  _visualization = createVisualization(scene);
 
   // Controls
   controls = new OrbitControls(camera, renderer.domElement);

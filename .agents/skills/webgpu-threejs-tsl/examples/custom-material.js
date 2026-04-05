@@ -15,16 +15,11 @@ import {
   Fn,
   color,
   float,
-  vec2,
-  vec3,
   uniform,
-  texture,
   uv,
   time,
   mix,
-  smoothstep,
   sin,
-  cos,
   positionLocal,
   positionWorld,
   normalLocal,
@@ -33,8 +28,13 @@ import {
 } from 'three/tsl';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let camera, scene, renderer, controls;
-let rimColor, patternScale, displacementStrength;
+let camera;
+let scene;
+let renderer;
+let controls;
+let rimColor;
+let patternScale;
+let displacementStrength;
 
 async function init() {
   // Setup

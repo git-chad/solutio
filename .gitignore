@@ -65,3 +65,6 @@ next-env.d.ts
 
 # storybook
 *storybook.log
+
+# design system
+DESIGN_SYSTEM.md

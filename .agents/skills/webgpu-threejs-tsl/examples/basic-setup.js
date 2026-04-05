@@ -12,7 +12,10 @@ import * as THREE from 'three/webgpu';
 import { color, time, oscSine, positionLocal, normalWorld } from 'three/tsl';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let camera, scene, renderer, controls;
+let camera;
+let scene;
+let renderer;
+let controls;
 
 async function init() {
   // Camera

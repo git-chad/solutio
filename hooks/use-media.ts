@@ -1,14 +1,12 @@
 import * as React from "react";
 
-import { isApiSupported } from "@/utils";
-
 export const useMedia = (mediaQuery: string, initialValue?: boolean) => {
 	const [isVerified, setIsVerified] = React.useState<boolean | undefined>(
 		initialValue,
 	);
 
 	React.useEffect(() => {
-		if (!isApiSupported("matchMedia")) {
+		if (typeof window === "undefined" || !("matchMedia" in window)) {
 			console.warn("matchMedia is not supported by your current browser");
 			return;
 		}
@@ -21,12 +19,13 @@ export const useMedia = (mediaQuery: string, initialValue?: boolean) => {
 			return () => {
 				mediaQueryList.removeEventListener("change", changeHandler);
 			};
-		} else if (typeof mediaQueryList.addListener === "function") {
+		}if (typeof mediaQueryList.addListener === "function") {
 			mediaQueryList.addListener(changeHandler);
 			return () => {
 				mediaQueryList.removeListener(changeHandler);
 			};
 		}
+		return undefined;
 	}, [mediaQuery]);
 
 	return isVerified;

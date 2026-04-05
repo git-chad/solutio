@@ -83,6 +83,24 @@
   --color-gray-700: #333333;
   --color-gray-800: #1a1a1a;
 
+  /* Solutio palette */
+  --color-solutio-bg: #0A0A0A;
+  --color-solutio-cta: #433123;
+  --color-solutio-card: #FFFFFF08;
+  --color-solutio-card-content: #FFFFFF0A;
+  --color-solutio-card-border: #FFFFFF0F;
+  --color-solutio-ghost: #FFFFFF1A;
+  --color-solutio-dot: #FFFFFF33;
+  --color-solutio-text: #FFFFFF;
+  --color-solutio-text-strong: #FFFFFFD9;
+  --color-solutio-text-body: #FFFFFFBF;
+  --color-solutio-text-muted: #FFFFFF80;
+  --color-solutio-text-subtle: #FFFFFF73;
+  --color-solutio-text-dim: #FFFFFF66;
+  --color-solutio-text-label: #FFFFFF59;
+  --color-solutio-text-section: #FFFFFF4D;
+  --color-solutio-text-ghost: #FFFFFF33;
+
   --spacing: 0.25rem;
   --spacing-0: 0;
   --spacing-safe: var(--safe);
@@ -91,6 +109,7 @@
 
   --font-*: initial;
   --font-mono: var(--geist-mono);
+  --font-serif: var(--instrument-serif);
 
   --ease-*: initial;
   --ease-in-quad: var(--ease-in-quad);
@@ -121,7 +140,7 @@
 }
 
 [data-theme="dark"] {
-  --color-primary: #000000;
+  --color-primary: #0A0A0A;
   --color-secondary: #ffffff;
   --color-contrast: #ff4d00;
 }
@@ -141,13 +160,13 @@
 
 @utility desktop-only {
   @media (--mobile-only) {
-    display: none !important;
+    display: none;
   }
 }
 
 @utility mobile-only {
   @media (--tablet) {
-    display: none !important;
+    display: none;
   }
 }
 

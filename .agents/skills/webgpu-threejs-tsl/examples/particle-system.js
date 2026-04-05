@@ -16,7 +16,6 @@ import {
   If,
   uniform,
   float,
-  vec3,
   color,
   instancedArray,
   instanceIndex,
@@ -25,8 +24,13 @@ import {
 } from 'three/tsl';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let camera, scene, renderer, controls;
-let computeInit, computeUpdate, computeHit;
+let camera;
+let scene;
+let renderer;
+let controls;
+let computeInit;
+let computeUpdate;
+let computeHit;
 
 // Particle count
 const PARTICLE_COUNT = 100000;

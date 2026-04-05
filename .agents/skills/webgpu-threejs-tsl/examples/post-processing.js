@@ -15,9 +15,6 @@ import * as THREE from 'three/webgpu';
 import {
   Fn,
   float,
-  vec2,
-  vec3,
-  vec4,
   color,
   uniform,
   pass,
@@ -25,16 +22,15 @@ import {
   screenSize,
   time,
   oscSine,
-  mix,
-  smoothstep,
-  texture,
-  grayscale,
   saturation
 } from 'three/tsl';
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let camera, scene, renderer, controls;
+let camera;
+let scene;
+let renderer;
+let controls;
 let postProcessing;
 
 // Effect uniforms
@@ -168,7 +164,7 @@ function setupPostProcessing() {
   output = output.mul(vignette());
 
   // 4. Optional: Scanlines
-  const scanlines = Fn(() => {
+  const _scanlines = Fn(() => {
     const scanline = screenUV.y.mul(screenSize.y).mul(0.5).sin().mul(0.05).add(0.95);
     return scanline;
   });

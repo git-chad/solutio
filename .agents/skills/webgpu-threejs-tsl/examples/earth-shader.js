@@ -15,11 +15,9 @@
 import * as THREE from 'three/webgpu';
 import {
   Fn,
-  If,
   float,
   vec2,
   vec3,
-  vec4,
   color,
   uniform,
   texture,
@@ -28,20 +26,21 @@ import {
   mix,
   smoothstep,
   pow,
-  clamp,
   normalize,
-  dot,
-  max,
   positionWorld,
   normalWorld,
-  normalLocal,
   cameraPosition,
   bumpMap
 } from 'three/tsl';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-let camera, scene, renderer, controls;
-let earth, clouds, atmosphere;
+let camera;
+let scene;
+let renderer;
+let controls;
+let earth;
+let clouds;
+let atmosphere;
 
 // Uniforms
 const sunDirection = uniform(new THREE.Vector3(1, 0.2, 0.5).normalize());
@@ -204,7 +203,7 @@ function createAtmosphere() {
 
   material.colorNode = Fn(() => {
     const viewDir = normalize(cameraPosition.sub(positionWorld));
-    const fresnel = pow(float(1.0).sub(normalWorld.dot(viewDir).abs()), 3.0);
+    const _fresnel = pow(float(1.0).sub(normalWorld.dot(viewDir).abs()), 3.0);
 
     const sunOrientation = normalWorld.dot(sunDirection).mul(0.5).add(0.5);
     const atmosphereColor = mix(atmosphereTwilightColor, atmosphereDayColor, sunOrientation);

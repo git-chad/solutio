@@ -1,10 +1,10 @@
 import { Wrapper } from "@/components/layout/wrapper"
-import DynamicCanvas from "@/components/webgl/canvas/dynamic"
+import { Hero } from "@/components/sections/hero"
 
 export default function Home() {
   return (
     <Wrapper theme="dark">
-      <DynamicCanvas />
+      <Hero />
     </Wrapper>
   )
 }

@@ -18,43 +18,21 @@ import * as THREE from 'three/webgpu';
 import {
   // Types
   float,
-  vec2,
-  vec3,
-  vec4,
   color,
-  uniform,
-
-  // Geometry
-  positionLocal,
   positionWorld,
-  normalLocal,
   normalWorld,
-  uv,
 
   // Camera
   cameraPosition,
 
   // Time
   time,
-  deltaTime,
 
   // Math
   mix,
-  smoothstep,
-  clamp,
-  sin,
-  cos,
-
-  // Texture
-  texture,
 
   // Functions
   Fn,
-  If,
-  Loop,
-
-  // Post-processing
-  pass
 } from 'three/tsl';
 
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -86,7 +64,10 @@ const CONFIG = {
 // GLOBALS
 // ============================================
 
-let camera, scene, renderer, controls;
+let camera;
+let scene;
+let renderer;
+let controls;
 let clock;
 
 // Add your uniforms here
@@ -216,7 +197,7 @@ function createExampleMaterial() {
 
 let postProcessing;
 
-function setupPostProcessing() {
+function _setupPostProcessing() {
   // Uncomment and customize as needed
 
   // postProcessing = new THREE.RenderPipeline(renderer);
@@ -233,7 +214,7 @@ function setupPostProcessing() {
 
 function animate() {
   const delta = clock.getDelta();
-  const elapsed = clock.getElapsedTime();
+  const _elapsed = clock.getElapsedTime();
 
   // ========================================
   // UPDATE YOUR SCENE HERE

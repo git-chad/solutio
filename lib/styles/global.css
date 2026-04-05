@@ -193,6 +193,6 @@ button {
 
 html.screenshot {
   *:not(:has(canvas), canvas, :has(#orchestra), #orchestra, #orchestra *) {
-    opacity: 0 !important;
+    opacity: 0;
   }
 }

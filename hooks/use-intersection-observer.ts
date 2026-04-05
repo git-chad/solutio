@@ -14,7 +14,7 @@ export const useIntersectionObserver = <T extends Element>(
 				setInView((p) => {
 					// trigger once?
 					if (options?.triggerOnce && p === true) return p;
-					else return element.isIntersecting;
+					return element.isIntersecting;
 				});
 			}
 		};
