@@ -18,7 +18,7 @@ export function Hero() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#0A0A0A4D] to-[#0A0A0AD9]" />
 
       {/* Content */}
-      <div className="relative z-1 flex flex-col items-center gap-7 px-safe">
+      <div className="relative z-1 flex flex-col items-center gap-7">
         <Typography variant="label">
           Tax Advisory & Strategic Counsel
         </Typography>

@@ -194,5 +194,14 @@
   @apply b-layout-block-inner b-grid;
 }
 
+@utility pulse-dot {
+  animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
 @custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
