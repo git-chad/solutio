@@ -31,12 +31,12 @@ export function About() {
           </Typography>
         </div>
 
-        <div className="relative w-[33.75rem] shrink-0 overflow-hidden rounded-[1.25rem]">
+        <div className="relative aspect-[4/3] w-[33.75rem] shrink-0 overflow-hidden rounded-[1.25rem]">
           <Image
             src="/images/about.webp"
             alt="Office bookshelf"
             fill
-            className="object-cover"
+            className="size-full object-cover"
           />
         </div>
       </div>
