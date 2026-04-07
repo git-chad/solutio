@@ -13,6 +13,7 @@ export function Container({
   ...props
 }: ContainerProps) {
   return (
+    // @ts-expect-error
     <Component
       className={cn("relative mx-auto w-full max-w-[90rem] px-safe", className)}
       {...props}
