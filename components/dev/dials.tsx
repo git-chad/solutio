@@ -18,6 +18,12 @@ import {
   HERO_DEFAULTS as H,
   heroControls,
 } from "@/components/webgpu/lib/hero-controls"
+import {
+  INTRO_DEFAULTS as I,
+  introControls,
+  introTiming,
+  replayIntro,
+} from "@/components/webgpu/lib/intro-controls"
 
 /**
  * Live controls for the gradient surfaces.
@@ -31,6 +37,47 @@ import {
  * separate production path to keep in sync.
  */
 export function Dials() {
+  const intro = useDialKit(
+    "Intro",
+    {
+      replay: { type: "action", label: "Replay intro" },
+      duration: [I.duration, 0.4, 6, 0.1],
+      feather: [I.feather, 0.05, 1, 0.01],
+      frontGlow: [I.frontGlow, 0, 0.4, 0.005],
+      settleZoom: [I.settleZoom, 0, 0.3, 0.005],
+      shimmer: [I.shimmer, 0, 3, 0.05],
+      shimmerScale: [I.shimmerScale, 1, 60, 1],
+      shimmerSpeed: [I.shimmerSpeed, 0, 6, 0.1],
+      moteScale: [I.moteScale, 8, 160, 1],
+      moteSize: [I.moteSize, 0.02, 0.45, 0.005],
+      moteBurst: [I.moteBurst, 0, 4, 0.05],
+      moteTrail: [I.moteTrail, 0.02, 1, 0.01],
+      moteDrift: [I.moteDrift, 0, 1, 0.01],
+    },
+    {
+      // Replays without a refresh, which is the point: reloading would throw
+      // away every value tuned in this panel.
+      onAction: (action) => {
+        if (action === "replay") replayIntro()
+      },
+    }
+  )
+
+  useEffect(() => {
+    introTiming.duration = intro.duration
+    introControls.feather.value = intro.feather
+    introControls.frontGlow.value = intro.frontGlow
+    introControls.settleZoom.value = intro.settleZoom
+    introControls.shimmer.value = intro.shimmer
+    introControls.shimmerScale.value = intro.shimmerScale
+    introControls.shimmerSpeed.value = intro.shimmerSpeed
+    introControls.moteScale.value = intro.moteScale
+    introControls.moteSize.value = intro.moteSize
+    introControls.moteBurst.value = intro.moteBurst
+    introControls.moteTrail.value = intro.moteTrail
+    introControls.moteDrift.value = intro.moteDrift
+  }, [intro])
+
   const hero = useDialKit("Hero", {
     exposure: [H.exposure, 0, 2, 0.01],
     contrast: [H.contrast, 0.5, 3, 0.01],

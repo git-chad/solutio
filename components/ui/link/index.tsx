@@ -129,6 +129,7 @@ export function Link({
    */
   if (href.startsWith("#")) {
     return (
+      // biome-ignore lint/plugin: this *is* the Link component the rule points at.
       <a href={href} onClick={onClick} {...props}>
         {children}
       </a>

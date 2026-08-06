@@ -6,17 +6,25 @@ import { useEffect, useMemo, useRef } from "react"
 import {
   abs,
   clamp,
+  cos,
+  dot,
   float,
+  floor,
   Fn,
+  fract,
   max,
   mix,
+  mx_fractal_noise_float,
   oneMinus,
   positionGeometry,
   pow,
+  sin,
   smoothstep,
   texture,
+  time,
   uniform,
   vec2,
+  vec3,
   vec4,
   viewportUV,
 } from "three/tsl"
@@ -31,23 +39,20 @@ import {
 } from "three/webgpu"
 import { backgroundColor } from "@/components/webgpu/lib/colors"
 import { heroControls } from "@/components/webgpu/lib/hero-controls"
+import {
+  introControls,
+  introTiming,
+} from "@/components/webgpu/lib/intro-controls"
 import { dither } from "@/components/webgpu/lib/mesh-gradient"
 
-/** Seconds for the scene to resolve from farthest to nearest. */
-const REVEAL_DURATION = 1.8
 /**
- * Softness of the advancing front, in depth units.
+ * Cheap 2D hash.
  *
- * With a hard edge the reveal reads as a wipe following the depth map's object
- * boundaries. Feathering it across a third of the depth range means several
- * planes are always mid-resolve, which is what makes it look like the room is
- * condensing out of the dark rather than being uncovered.
+ * The standard sin/fract trick. Not a good random number generator, but the
+ * artefacts are invisible when all it decides is where a speck of dust sits.
  */
-const FEATHER = 0.34
-/** Extra zoom at the start, easing out as the scene settles into place. */
-const SETTLE_ZOOM = 0.05
-/** Brightness lift on the front itself, so the edge reads as light arriving. */
-const FRONT_GLOW = 0.05
+const hash21 = (p: Node) =>
+  fract(sin(dot(vec2(p), vec2(127.1, 311.7))).mul(43758.5453))
 
 type SceneProps = {
   map: Texture
@@ -71,24 +76,35 @@ export function Scene({ map, depthMap, resolution, pointer }: SceneProps) {
   const reveal = useMemo(() => uniform(0), [])
   const elapsed = useRef(0)
 
+  const seenToken = useRef(introTiming.token)
+
   useEffect(() => {
     // Reduced motion still gets the scene — just already arrived.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      elapsed.current = REVEAL_DURATION
+      elapsed.current = introTiming.duration
       reveal.value = 1
     }
   }, [reveal])
 
   useFrame((_state, delta) => {
-    if (elapsed.current >= REVEAL_DURATION) return
+    // Replay is a counter rather than an event, so the scene picks it up on its
+    // own clock without needing a subscription or a re-render.
+    if (seenToken.current !== introTiming.token) {
+      seenToken.current = introTiming.token
+      elapsed.current = 0
+    }
 
-    elapsed.current = Math.min(REVEAL_DURATION, elapsed.current + delta)
-    reveal.value = easeInOut(elapsed.current / REVEAL_DURATION)
+    const duration = introTiming.duration
+    if (elapsed.current >= duration) return
+
+    elapsed.current = Math.min(duration, elapsed.current + delta)
+    reveal.value = easeInOut(elapsed.current / duration)
   })
 
   const { material, imageAspect } = useMemo(() => {
     const imageAspect = uniform(1)
     const controls = heroControls
+    const intro = introControls
     const background = backgroundColor
 
     for (const tex of [map, depthMap]) {
@@ -114,7 +130,7 @@ export function Scene({ map, depthMap, resolution, pointer }: SceneProps) {
       const scale = vec2(max(ratio, 1), max(float(1).div(ratio), 1))
 
       const margin = float(controls.parallaxMargin).add(
-        oneMinus(reveal).mul(SETTLE_ZOOM)
+        oneMinus(reveal).mul(intro.settleZoom)
       )
       const zoomed = vec2(uvCoord).sub(0.5).mul(oneMinus(margin)).add(0.5)
       const fitted = zoomed.sub(0.5).div(scale).add(0.5)
@@ -165,18 +181,87 @@ export function Scene({ map, depthMap, resolution, pointer }: SceneProps) {
        * arrive. It is scaled past 1 by the feather width so that at the end of
        * the ramp even the nearest pixel is fully through the transition.
        */
-      const front = reveal.mul(1 + FEATHER)
-      const arrived = oneMinus(smoothstep(front.sub(FEATHER), front, depth))
+      const feather = float(intro.feather)
+      const front = reveal.mul(float(1).add(feather))
+      const arrived = oneMinus(smoothstep(front.sub(feather), front, depth))
 
       /**
        * A faint lift travelling with the front itself, peaking where the
        * transition is happening. Reads as light finding each plane as it
        * arrives, and gives the sweep a direction the eye can follow.
        */
-      const band = clamp(oneMinus(abs(depth.sub(front)).div(FEATHER)), 0, 1)
-      const lit = photo.add(band.mul(FRONT_GLOW))
+      const band = clamp(oneMinus(abs(depth.sub(front)).div(feather)), 0, 1)
+
+      /**
+       * Shimmer, breaking the front up so it glints rather than ramping
+       * smoothly. Sampled in the *shifted* space so it travels with the room
+       * under the pointer instead of sitting still on the glass.
+       */
+      const shimmerNoise = mx_fractal_noise_float(
+        vec3(shifted.mul(intro.shimmerScale), time.mul(intro.shimmerSpeed)),
+        2,
+        2,
+        0.5
+      )
+      const glint = band.mul(float(1).add(shimmerNoise.mul(intro.shimmer)))
+      const lit = photo.add(glint.mul(intro.frontGlow))
 
       const composited = mix(background, lit, arrived)
+
+      /**
+       * Dust caught in the light.
+       *
+       * A hashed grid rather than a particle system: no geometry, no extra
+       * draw calls, no second pass — a handful of hash and trig ops on top of
+       * a fragment we are already shading. Placed in the shifted space so the
+       * motes parallax with the room rather than floating on top of it.
+       *
+       * The grid only decides *where* a mote could be; whether it is lit is
+       * entirely the front's business — see `wake` below.
+       */
+      const grid = shifted.mul(intro.moteScale)
+      const cell = floor(grid)
+      const local = fract(grid).sub(0.5)
+
+      const seed = hash21(cell)
+      const size = hash21(cell.add(17.3))
+
+      // Per-cell phase, so they wander independently instead of in lockstep.
+      const wander = time.mul(intro.moteDrift).add(seed.mul(6.283))
+      const offset = vec2(sin(wander), cos(wander.mul(1.3))).mul(0.26)
+
+      const shape = smoothstep(
+        float(intro.moteSize).mul(size.mul(0.7).add(0.3)),
+        0,
+        local.sub(offset).length()
+      )
+      const twinkle = sin(time.mul(2.1).add(seed.mul(12)))
+        .mul(0.4)
+        .add(0.6)
+
+      /**
+       * Motes belong to the front, not to the room.
+       *
+       * `behind` is how far the front has travelled past this pixel's depth.
+       * Nothing lights ahead of it; motes flare as it arrives and fade out over
+       * `moteTrail` behind it, so the dust reads as a wake following the light
+       * rather than a layer sitting on the photograph. Once the sweep finishes
+       * the front is past every depth by more than the trail, so they are gone.
+       *
+       * Gating on `arrived` instead — which saturates to 1 everywhere once the
+       * sweep ends — is what put specks over the whole image.
+       */
+      const behind = front.sub(depth)
+      const wake = smoothstep(0, feather.mul(0.35), behind).mul(
+        oneMinus(smoothstep(0, float(intro.moteTrail), behind))
+      )
+
+      /**
+       * Added after the composite rather than before it, so motes still catch
+       * the light inside the band — where `arrived` is only partial and would
+       * otherwise scale them away.
+       */
+      const motes = shape.mul(twinkle).mul(wake).mul(intro.moteBurst)
 
       /**
        * Readability plate behind the headline. Composited here rather than as
@@ -201,7 +286,7 @@ export function Scene({ map, depthMap, resolution, pointer }: SceneProps) {
       )
 
       const scrim = clamp(radial.mul(controls.scrim), 0, 1)
-      const plated = mix(composited, background, scrim)
+      const plated = mix(composited.add(motes), background, scrim)
 
       return mix(plated, background, blend).add(dither())
     })()
