@@ -1,1 +1,1 @@
-declare module "@/lib/styles/index.css";
+declare module "@/lib/styles/index.css"

@@ -1,4 +1,4 @@
-import { Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Geist_Mono, Instrument_Serif } from "next/font/google"
 
 const mono = Geist_Mono({
   subsets: ["latin"],
@@ -12,7 +12,7 @@ const mono = Geist_Mono({
     "Menlo",
     "monospace",
   ],
-});
+})
 
 const serif = Instrument_Serif({
   subsets: ["latin"],
@@ -20,9 +20,9 @@ const serif = Instrument_Serif({
   display: "swap",
   variable: "--instrument-serif",
   fallback: ["Georgia", "Times New Roman", "serif"],
-});
+})
 
-const fonts = [mono, serif];
-const fontsVariable = fonts.map((font) => font.variable).join(" ");
+const fonts = [mono, serif]
+const fontsVariable = fonts.map((font) => font.variable).join(" ")
 
-export { fontsVariable };
+export { fontsVariable }

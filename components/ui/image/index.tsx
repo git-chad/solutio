@@ -167,7 +167,8 @@ export function Image({
 }: ImageProps) {
   // Generate responsive sizes if not provided
   const finalSizes =
-    sizes || `(max-width: ${DESKTOP_BREAKPOINT}px) ${mobileSize}, ${desktopSize}`
+    sizes ||
+    `(max-width: ${DESKTOP_BREAKPOINT}px) ${mobileSize}, ${desktopSize}`
 
   // Early return after hooks
   if (!src) return null
