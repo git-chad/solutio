@@ -1,3 +1,4 @@
+import { CurrentYear } from "@/components/layout/footer/current-year"
 import { Container } from "@/components/ui/container"
 import { Link } from "@/components/ui/link"
 import { Typography } from "@/components/ui/typography"
@@ -61,8 +62,8 @@ export function Footer() {
           variant="caption"
           className="text-[0.75rem]/4 text-solutio-text-ghost"
         >
-          &copy; {new Date().getFullYear()} {SITE.legalName}. All rights
-          reserved.
+          &copy; <CurrentYear />
+          {SITE.legalName}. All rights reserved.
         </Typography>
       </div>
     </Container>
