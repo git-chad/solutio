@@ -153,5 +153,9 @@ export function Dials() {
     gradientControls.barBias.value = pattern.barBias
   }, [pattern])
 
-  return <DialRoot position="bottom-right" theme="dark" />
+  // Collapsed on mount: the panel is a tuning tool, not part of the page, and
+  // an open stack of sliders is the first thing the eye lands on in a review.
+  // The state is in-memory only — nothing is persisted, so every load starts
+  // closed regardless of how it was left.
+  return <DialRoot position="bottom-right" theme="dark" defaultOpen={false} />
 }
