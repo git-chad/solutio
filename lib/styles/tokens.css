@@ -13,9 +13,12 @@
   --gap: 16px;
   --safe: 16px;
   --header-height: 58px;
+  /* Vertical rhythm between top-level sections. */
+  --section-gap: 4.5rem;
   --layout-width: calc(100vw - (2 * var(--safe)));
   --column-width: calc(
-    (var(--layout-width) - (var(--columns) - 1) * var(--gap)) / var(--columns)
+    (var(--layout-width) - (var(--columns) - 1) * var(--gap)) /
+    var(--columns)
   );
   --ease-in-quad: cubic-bezier(0.55, 0.085, 0.68, 0.53);
   --ease-in-cubic: cubic-bezier(0.55, 0.055, 0.675, 0.19);
@@ -45,11 +48,16 @@
   --color-pink: #ff73a6;
   --color-gray: #666666;
 
+  @variant tablet {
+    --section-gap: 5.5rem;
+  }
+
   @variant desktop {
     --device-width: 1440;
     --device-height: 816;
     --columns: 12;
     --header-height: 98px;
+    --section-gap: 6.25rem;
   }
 }
 
@@ -83,29 +91,33 @@
   --color-gray-700: #333333;
   --color-gray-800: #1a1a1a;
 
-  /* Solutio palette */
-  --color-solutio-bg: #0A0A0A;
+  /* Solutio palette
+     Surfaces are white at low alpha so they read against --color-solutio-bg
+     without introducing a second background hue. */
+  --color-solutio-bg: #0a0a0a;
   --color-solutio-cta: #433123;
-  --color-solutio-card: #FFFFFF08;
-  --color-solutio-card-content: #FFFFFF0A;
-  --color-solutio-card-border: #FFFFFF0F;
-  --color-solutio-ghost: #FFFFFF1A;
-  --color-solutio-dot: #FFFFFF33;
-  --color-solutio-text: #FFFFFF;
-  --color-solutio-text-strong: #FFFFFFD9;
-  --color-solutio-text-body: #FFFFFFBF;
-  --color-solutio-text-muted: #FFFFFF80;
-  --color-solutio-text-subtle: #FFFFFF73;
-  --color-solutio-text-dim: #FFFFFF66;
-  --color-solutio-text-label: #FFFFFF59;
-  --color-solutio-text-section: #FFFFFF4D;
-  --color-solutio-text-ghost: #FFFFFF33;
+  --color-solutio-card: #ffffff0a;
+  --color-solutio-card-hover: #ffffff14;
+  --color-solutio-card-border: #ffffff0f;
+  --color-solutio-card-border-hover: #ffffff24;
+  --color-solutio-ghost: #ffffff1a;
+  --color-solutio-ghost-hover: #ffffff29;
+  /* Text ramp, strongest to faintest. */
+  --color-solutio-text-body: #ffffffbf;
+  --color-solutio-text-muted: #ffffff80;
+  --color-solutio-text-subtle: #ffffff73;
+  --color-solutio-text-label: #ffffff59;
+  --color-solutio-text-ghost: #ffffff33;
 
   --spacing: 0.25rem;
   --spacing-0: 0;
   --spacing-safe: var(--safe);
   --spacing-gap: var(--gap);
   --spacing-header-height: var(--header-height);
+  --spacing-section: var(--section-gap);
+
+  --radius-card: 1rem;
+  --radius-panel: 1.25rem;
 
   --font-*: initial;
   --font-mono: var(--geist-mono);
@@ -140,7 +152,7 @@
 }
 
 [data-theme="dark"] {
-  --color-primary: #0A0A0A;
+  --color-primary: #0a0a0a;
   --color-secondary: #ffffff;
   --color-contrast: #ff4d00;
 }
@@ -196,11 +208,20 @@
 
 @utility pulse-dot {
   animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @media (--reduced-motion) {
+    animation: none;
+  }
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 @custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));

@@ -14,16 +14,21 @@ export function HowWeWork() {
   return (
     <>
       {/* Banner */}
-      <section className="relative mt-[6.25rem] flex h-[30rem] w-full items-end overflow-clip">
+      <section
+        id="how-we-work"
+        className="relative mt-section flex tablet:h-120 min-h-80 w-full items-end overflow-clip"
+      >
         <Image
           src="/images/banner-blur.webp"
           alt=""
           fill
+          mobileSize="100vw"
+          desktopSize="100vw"
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-[#0A0A0A]/70" />
+        <div className="absolute inset-0 bg-solutio-bg/70" />
 
-        <Container className="flex flex-col gap-4 pb-14">
+        <Container className="flex flex-col gap-4 py-12 tablet:pb-14">
           <SectionLabel>How We Work</SectionLabel>
           <Typography variant="heading-2" className="max-w-[43.75rem]">
             We do not operate in volume. We think. We design. We advise.
@@ -34,7 +39,7 @@ export function HowWeWork() {
       {/* Approach */}
       <Container
         as="section"
-        className="flex items-stretch justify-between gap-[4.5rem] py-[4.5rem]"
+        className="flex tablet-lg:flex-row flex-col items-stretch justify-between gap-10 tablet-lg:gap-18 py-12 tablet-lg:py-18"
       >
         <div className="flex flex-1 flex-col justify-between">
           <Typography variant="body" className="mb-4 max-w-[32.5rem]">
@@ -43,28 +48,33 @@ export function HowWeWork() {
             solution to the specific nature of the situation.
           </Typography>
 
-          {approaches.map((item, i) => (
-            <div
-              key={item}
-              className="flex items-baseline gap-7 border-solutio-text-ghost/10 border-t py-[1.375rem]"
-            >
-              <Typography
-                variant="heading-3"
-                as="span"
-                className="font-serif text-solutio-text-ghost"
+          <ul>
+            {approaches.map((item, i) => (
+              <li
+                key={item}
+                className="flex items-baseline gap-5 tablet:gap-7 border-solutio-card-border border-t py-5 tablet:py-[1.375rem]"
               >
-                {String(i + 1).padStart(2, "0")}
-              </Typography>
-              <Typography variant="body-strong">{item}</Typography>
-            </div>
-          ))}
+                <Typography
+                  variant="heading-3"
+                  as="span"
+                  className="text-solutio-text-ghost tabular-nums"
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </Typography>
+                <Typography variant="body-strong">{item}</Typography>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <div className="relative h-[32.5rem] w-[23.25rem] shrink-0 overflow-hidden rounded-[1.25rem]">
+        <div className="relative aspect-3/4 tablet-lg:aspect-auto tablet-lg:h-130 tablet-lg:w-[23.25rem] w-full shrink-0 overflow-hidden rounded-panel">
           <Image
             src="/images/approach.webp"
-            alt="Professional consultation"
+            alt="An advisor reviewing documents at a desk"
             fill
+            aspectRatio={3 / 4}
+            mobileSize="100vw"
+            desktopSize="25vw"
             className="object-cover"
           />
         </div>

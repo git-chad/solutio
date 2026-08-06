@@ -162,6 +162,14 @@
         "rules": {
           "correctness": {
             "noUnknownFunction": "off"
+          },
+          "suspicious": {
+            "noUnknownAtRules": {
+              "level": "error",
+              "options": {
+                "ignore": ["custom-media", "custom-variant"]
+              }
+            }
           }
         }
       }
