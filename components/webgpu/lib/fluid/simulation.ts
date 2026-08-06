@@ -58,7 +58,7 @@ export const CHEAP_FLUID: FluidConfig = {
   curl: 3,
   velocityDissipation: 3.5,
   densityDissipation: 4,
-  splatRadius: 0.0025,
+  splatRadius: 0.009,
   splatForce: 5000,
 }
 

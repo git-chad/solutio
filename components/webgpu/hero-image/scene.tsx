@@ -18,11 +18,11 @@ import {
   texture,
   uniform,
   vec2,
-  vec3,
   vec4,
 } from "three/tsl"
 import {
   ClampToEdgeWrapping,
+  Color,
   LinearFilter,
   MeshBasicNodeMaterial,
   type Node,
@@ -39,11 +39,17 @@ import {
 import type { FluidPointer } from "@/components/webgpu/lib/fluid/use-fluid-pointer"
 
 /** Halftone cell size in CSS px, at the reference height below. */
-const CELL_SIZE = 14
+const CELL_SIZE = 8
 /** Cell size is authored against this height so the pattern scales with it. */
 const REFERENCE_HEIGHT = 900
-/** Background colour, matching --color-solutio-bg. */
-const BG = 0.0392
+/**
+ * Must stay in sync with `--color-solutio-bg`.
+ *
+ * Built through `Color` rather than written as a raw float: the renderer
+ * encodes linear to sRGB on output, so a literal 0.039 in the shader leaves the
+ * canvas as #383838 rather than #0A0A0A. `Color` does the sRGB decode for us.
+ */
+const BG_HEX = "#0A0A0A"
 /** Flat multiplier on the photograph. Below 1 it reads darker and less hazy. */
 const PHOTO_EXPOSURE = 0.44
 /** Raising the photo to this power deepens its shadows without crushing highlights. */
@@ -52,8 +58,14 @@ const PHOTO_CONTRAST = 1.35
 const BLEND_HEIGHT = 0.42
 /** Curve of the bottom blend. Above 1 holds the image longer, then falls away fast. */
 const BLEND_EASE = 2.6
-/** Dye value at which the pattern is fully revealed. */
-const REVEAL_THRESHOLD = 0.22
+/** Dye level at which a cell is fully given over to the pattern. */
+const REVEAL_THRESHOLD = 0.16
+/** How much the photo's own luminance contributes to bar width. */
+const LUMA_WEIGHT = 0.5
+/** How much the fluid widens the bars on top of that. */
+const DYE_WEIGHT = 0.9
+/** Brightness of a lit bar, relative to the photo. */
+const PATTERN_GAIN = 2.2
 
 type SceneProps = {
   map: Texture
@@ -73,6 +85,9 @@ export function Scene({ map, pointer }: SceneProps) {
   const { material, resolution, imageAspect } = useMemo(() => {
     const resolution = uniform(new Vector2(1, 1))
     const imageAspect = uniform(1)
+    // `Color` decodes the sRGB hex into the linear working space the shader
+    // maths happens in, so this lands on exactly #0A0A0A after output encoding.
+    const background = uniform(new Color(BG_HEX))
 
     map.wrapS = ClampToEdgeWrapping
     map.wrapT = ClampToEdgeWrapping
@@ -101,31 +116,42 @@ export function Scene({ map, pointer }: SceneProps) {
       pow(texture(map, cover(uvCoord)).rgb, PHOTO_CONTRAST).mul(PHOTO_EXPOSURE)
 
     /**
-     * Reveal mask: the fluid's dye field.
-     *
-     * The simulation's targets are sampled y-up while `screenUV` is y-down, so
-     * the lookup is flipped to match.
+     * The fluid's dye field. The simulation's targets are sampled y-up while
+     * `screenUV` is y-down, so the lookup is flipped to match.
      */
-    const revealMask = () => {
-      const dye = fluid.dyeNode.sample(vec2(screenUV.x, oneMinus(screenUV.y))).x
-
-      return clamp(dye.div(REVEAL_THRESHOLD), 0, 1)
-    }
+    const dyeAt = (uvCoord: Node) =>
+      fluid.dyeNode.sample(vec2(vec2(uvCoord).x, oneMinus(vec2(uvCoord).y))).x
 
     /**
      * Candles halftone, taking its colour from the image so the effect reads as
      * the photograph resolving into bars rather than as an overlay on top.
+     *
+     * The fluid is an input to the pattern, not a layer on top of it. Both the
+     * dye and the photo are sampled at the *cell centre*, which quantises the
+     * fluid to the halftone grid — so what you see is bars widening and
+     * appearing, never the liquid's own silhouette. Sampling per pixel instead
+     * would draw the dye's smooth outline straight onto the screen and turn the
+     * simulation into a visible blob chasing the cursor.
      */
     const pattern = () => {
       // Scale the cell with the viewport so the halftone keeps its density.
       const cellSize = float(CELL_SIZE).mul(resolution.y).div(REFERENCE_HEIGHT)
       const { centre, localX } = candlesCell(screenUV, resolution, cellSize)
 
-      // Sample at the cell centre so each cell gets one flat colour.
       const cellColor = photo(centre)
-      const bar = candlesBar(luminance(cellColor), localX)
+      const cellDye = dyeAt(centre)
 
-      return { cellColor, bar }
+      // Fluid widens the bars on top of the photo's own luminance, so the
+      // pattern opens up where the fluid has been.
+      const value = luminance(cellColor)
+        .mul(LUMA_WEIGHT)
+        .add(cellDye.mul(DYE_WEIGHT))
+
+      return {
+        cellColor,
+        bar: candlesBar(value, localX),
+        presence: clamp(cellDye.div(REVEAL_THRESHOLD), 0, 1),
+      }
     }
 
     const material = new MeshBasicNodeMaterial()
@@ -138,14 +164,13 @@ export function Scene({ map, pointer }: SceneProps) {
 
     material.colorNode = Fn(() => {
       const base = photo(screenUV)
-      const mask = revealMask()
-      const { cellColor, bar } = pattern()
+      const { cellColor, bar, presence } = pattern()
 
-      // Off-bar falls back to a heavily darkened plate rather than black, so
-      // the revealed area keeps the image's tonal structure while still
-      // reading as a hard graphic pattern against the untouched photo.
-      const patternColor = mix(cellColor.mul(0.05), cellColor.mul(2.1), bar)
-      const composited = mix(base, patternColor, mask)
+      // Lit bars are the photo brightened; the gaps drop to the section
+      // background, so a revealed cell reads as pattern-on-background rather
+      // than as a tinted patch of photograph.
+      const patternColor = mix(background, cellColor.mul(PATTERN_GAIN), bar)
+      const composited = mix(base, patternColor, presence)
 
       /**
        * Readability plate behind the headline. Composited here rather than as
@@ -170,9 +195,9 @@ export function Scene({ map, pointer }: SceneProps) {
       )
 
       const scrim = clamp(radial.mul(0.45), 0, 1)
-      const plated = mix(composited, vec3(BG, BG, BG), scrim)
+      const plated = mix(composited, background, scrim)
 
-      return mix(plated, vec3(BG, BG, BG), blend)
+      return mix(plated, background, blend)
     })()
 
     return { material, resolution, imageAspect }
