@@ -50,13 +50,14 @@
 
   @variant tablet {
     --section-gap: 5.5rem;
+    --header-height: 68px;
   }
 
   @variant desktop {
     --device-width: 1440;
     --device-height: 816;
     --columns: 12;
-    --header-height: 98px;
+    --header-height: 76px;
     --section-gap: 6.25rem;
   }
 }
