@@ -4,6 +4,7 @@
  * Customize the Header and Footer components for your project needs.
  */
 import cn from "clsx"
+import { Dials } from "@/components/dev/dials"
 import { Footer } from "@/components/layout/footer"
 import { Header } from "@/components/layout/header"
 import { SmoothScroll } from "@/components/layout/smooth-scroll"
@@ -66,6 +67,7 @@ export function Wrapper({
           {children}
         </main>
         <Footer />
+        <Dials />
       </SmoothScroll>
     </Theme>
   )

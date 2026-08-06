@@ -29,7 +29,6 @@ import {
   type Vector2,
 } from "three/webgpu"
 import { dither } from "@/components/webgpu/lib/mesh-gradient"
-import { patterned } from "@/components/webgpu/lib/patterned"
 
 /**
  * Must stay in sync with `--color-solutio-bg`.
@@ -43,9 +42,6 @@ const BG_HEX = "#0A0A0A"
 const PHOTO_EXPOSURE = 0.44
 /** Raising the photo to this power deepens its shadows without crushing highlights. */
 const PHOTO_CONTRAST = 1.35
-/** Luminance window over which the halftone emerges from the photo. */
-const PATTERN_START = 0.13
-const PATTERN_FULL = 0.34
 /** Fraction of the hero height the bottom blend occupies. */
 const BLEND_HEIGHT = 0.42
 /** Curve of the bottom blend. Above 1 holds the image longer, then falls away fast. */
@@ -98,18 +94,9 @@ export function Scene({ map, resolution }: SceneProps) {
     material.vertexNode = vec4(positionGeometry.xy, 0, 1)
 
     material.colorNode = Fn(() => {
-      // Same rule as the gradients: the halftone resolves out of the lighter
-      // parts of the image, so the photograph and the gradients read as the
-      // same material rather than as two unrelated effects.
-      const composited = patterned({
-        field: photo,
-        resolution,
-        uv: viewportUV,
-        // Tuned to the graded photo's range, which tops out near
-        // PHOTO_EXPOSURE rather than at 1.
-        start: PATTERN_START,
-        full: PATTERN_FULL,
-      })
+      // The halftone is reserved for the gradient surfaces; the hero is the
+      // photograph, graded and left alone.
+      const composited = photo(viewportUV)
 
       /**
        * Readability plate behind the headline. Composited here rather than as

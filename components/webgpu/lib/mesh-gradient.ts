@@ -15,6 +15,7 @@ import {
   viewportUV,
 } from "three/tsl"
 import { Color, type Node, type Vector2 } from "three/webgpu"
+import { gradientControls } from "@/components/webgpu/lib/gradient-controls"
 
 /**
  * Greyscale ramp, keeping the tonal *structure* of `banner-blur.webp` — the
@@ -48,24 +49,13 @@ const POINTS = [
 ] as const
 
 /**
- * Global multiplier on every animation rate.
+ * Dither amplitude. Enough to break banding, below the threshold of vision.
  *
- * The per-point speeds above are ratios to each other, chosen so the points
- * never fall into step. This is the single knob for how fast the whole field
- * moves.
+ * The rest of the tuneables live in `gradientControls` as uniforms, so the dev
+ * panel can change them without recompiling the shader. The per-point speeds
+ * below stay as ratios to each other — `controls.speed` scales all of them, so
+ * the points never fall into step regardless of how fast the field runs.
  */
-const SPEED = 4.2
-/** Falloff radius of each tone. Larger blends softer. */
-const RADIUS = 0.42
-/** Strength of the fbm domain warp, in UV. */
-const WARP = 0.18
-/** Scale of the warp noise. Lower is broader and calmer. */
-const WARP_SCALE = 1.6
-/** How fast the warp field itself churns. */
-const WARP_SPEED = 0.22
-/** Extra warp added at full hover. */
-const HOVER_WARP = 0.1
-/** Dither amplitude. Enough to break banding, below the threshold of vision. */
 const DITHER = 0.004
 
 export type MeshGradientOptions = {
@@ -105,6 +95,11 @@ export function createMeshGradient({
 }: MeshGradientOptions) {
   const colors = palette.map((hex) => uniform(new Color(hex)))
 
+  const controls = gradientControls
+  // Scaled once and reused, so every point and the warp share one clock.
+  const animated = time.mul(controls.speed)
+  const warpTime = animated.mul(controls.warpSpeed)
+
   /** Evaluates the field at an arbitrary UV. */
   return (uvCoord: Node): MathNode => {
     const aspected = vec2(vec2(uvCoord).x.mul(float(aspect)), vec2(uvCoord).y)
@@ -113,19 +108,18 @@ export function createMeshGradient({
      * Domain warp. Two octaves of fbm offset the lookup, so the iso-contours of
      * the distance field fold into each other instead of staying circular.
      */
-    const warpAmount = float(WARP).add(float(hover).mul(HOVER_WARP))
+    const warpAmount = float(controls.warp).add(
+      float(hover).mul(controls.hoverWarp)
+    )
     const warp = vec2(
       mx_fractal_noise_float(
-        vec3(aspected.mul(WARP_SCALE), time.mul(WARP_SPEED * SPEED)),
+        vec3(aspected.mul(controls.warpScale), warpTime),
         2,
         2,
         0.5
       ),
       mx_fractal_noise_float(
-        vec3(
-          aspected.mul(WARP_SCALE).add(19.7),
-          time.mul(WARP_SPEED * SPEED * 0.9)
-        ),
+        vec3(aspected.mul(controls.warpScale).add(19.7), warpTime.mul(0.9)),
         2,
         2,
         0.5
@@ -143,7 +137,7 @@ export function createMeshGradient({
       const color = colors[index]
       if (!color) return
 
-      const t = time.mul(point.speed * SPEED).add(point.phase)
+      const t = animated.mul(point.speed).add(point.phase)
       const position = vec2(
         float(point.home[0]).add(sin(t).mul(point.drift[0])).mul(float(aspect)),
         float(point.home[1]).add(cos(t.mul(1.3)).mul(point.drift[1]))
@@ -155,7 +149,7 @@ export function createMeshGradient({
       const weight = float(1).div(
         distance
           .mul(distance)
-          .div(RADIUS * RADIUS)
+          .div(float(controls.radius).mul(controls.radius))
           .add(0.06)
       )
 

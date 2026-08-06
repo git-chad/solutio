@@ -1,30 +1,11 @@
-import { clamp, float, luminance, mix, smoothstep, vec3 } from "three/tsl"
+import { clamp, float, luminance, mix, vec3 } from "three/tsl"
 import type { uniform } from "three/tsl"
 import type { Node, Vector2 } from "three/webgpu"
 import { candlesBar, candlesCell } from "@/components/webgpu/lib/candles"
+import { gradientControls } from "@/components/webgpu/lib/gradient-controls"
 
-/**
- * Halftone cell size in CSS px, at the reference height below.
- *
- * Authored against a fixed height and scaled from there, so the pattern keeps
- * its density rather than getting coarser on a taller surface.
- */
-const CELL_SIZE = 8
+/** Cell size is authored against this height, then scaled with the surface. */
 const REFERENCE_HEIGHT = 900
-
-/**
- * Default luminance window over which bars fade in.
- *
- * Surfaces override this, because their tonal ranges differ: the gradient runs
- * the full 0..1, while the graded photograph tops out around 0.44, so one
- * shared window would leave the hero with no pattern at all.
- */
-const PATTERN_START = 0.34
-const PATTERN_FULL = 0.72
-/** Brightness of a lit bar, relative to its source. */
-const PATTERN_GAIN = 1.35
-/** How dark the gaps between bars go, relative to their source. */
-const PATTERN_FLOOR = 0.16
 
 export type PatternedOptions = {
   /** Evaluates the underlying field at an arbitrary UV. */
@@ -33,52 +14,37 @@ export type PatternedOptions = {
   resolution: ReturnType<typeof uniform<Vector2>>
   /** UV of the pixel being shaded. */
   uv: Node
-  /** Luminance at which bars begin to appear. */
-  start?: number
-  /** Luminance at which bars are fully present. */
-  full?: number
 }
 
 /**
- * Composites the candles halftone over a field, in its lighter areas.
+ * Renders a field *as* the candles halftone.
  *
- * This is the page's one visual rule: bright regions resolve into vertical
- * bars, dark regions stay smooth. Tying the pattern to luminance rather than to
- * an interaction means it reads as a property of the material itself, and it
- * gives the gradients and the hero photograph the same language.
+ * The gradient is never drawn directly — it only supplies each cell's colour
+ * and, through its luminance, that cell's bar width. So the surface is entirely
+ * pattern: brighter regions produce wider bars, darker ones thinner, and the
+ * gradient reads through the density rather than sitting behind it.
  *
- * The field is sampled twice — once per pixel for the smooth base, and once at
- * each cell's centre for the bars. Quantising to the cell is what stops the
- * pattern from tracing the field's own contours: what you see is bars widening
- * across a grid, not a shape outlined in stipple. The field is arithmetic
- * rather than texture reads, so the second evaluation is cheap.
+ * The field is sampled once per cell rather than once per pixel, which is both
+ * cheaper than the previous composite and the reason the pattern does not trace
+ * the field's own contours — the grid, not the gradient, decides where edges
+ * fall.
  */
-export function patterned({
-  field,
-  resolution,
-  uv,
-  start = PATTERN_START,
-  full = PATTERN_FULL,
-}: PatternedOptions): Node {
-  const base = vec3(field(uv))
+export function patterned({ field, resolution, uv }: PatternedOptions): Node {
+  const controls = gradientControls
 
-  const cellSize = float(CELL_SIZE).mul(resolution.y).div(REFERENCE_HEIGHT)
+  const cellSize = float(controls.cellSize)
+    .mul(resolution.y)
+    .div(REFERENCE_HEIGHT)
   const { centre, localX } = candlesCell(uv, resolution, cellSize)
 
   const cellColor = vec3(field(centre))
-  const cellLuma = luminance(cellColor)
+  const value = clamp(luminance(cellColor).add(controls.barBias), 0, 1)
 
-  // Brighter cells get wider bars, and the pattern only exists at all above
-  // PATTERN_START — so it emerges out of the highlights instead of being
-  // switched on across the whole surface.
-  const bar = candlesBar(cellLuma, localX)
-  const presence = clamp(smoothstep(start, full, cellLuma), 0, 1)
+  const bar = candlesBar(value, localX)
 
-  const patternColor = mix(
-    cellColor.mul(PATTERN_FLOOR),
-    cellColor.mul(PATTERN_GAIN),
+  return mix(
+    cellColor.mul(controls.barFloor),
+    cellColor.mul(controls.barGain),
     bar
   )
-
-  return mix(base, patternColor, presence)
 }
