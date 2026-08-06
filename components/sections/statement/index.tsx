@@ -1,4 +1,5 @@
 import { Container } from "@/components/ui/container"
+import { Reveal } from "@/components/ui/reveal"
 import { Image } from "@/components/ui/image"
 import { Typography } from "@/components/ui/typography"
 
@@ -16,11 +17,13 @@ export function Statement() {
       <div className="absolute inset-0 bg-solutio-bg/60" />
 
       <Container className="py-12 tablet:pb-16">
-        <Typography variant="heading-2" className="max-w-[45rem] text-pretty">
-          We solve complex problems because we know how. And beyond that, we
-          help preserve value, bring clarity to the present and shape the
-          future.
-        </Typography>
+        <Reveal>
+          <Typography variant="heading-2" className="max-w-[45rem] text-pretty">
+            We solve complex problems because we know how. And beyond that, we
+            help preserve value, bring clarity to the present and shape the
+            future.
+          </Typography>
+        </Reveal>
       </Container>
     </section>
   )

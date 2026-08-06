@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/ui/container"
+import { Reveal } from "@/components/ui/reveal"
 import { CornerScrim } from "@/components/ui/corner-scrim"
 import { Typography } from "@/components/ui/typography"
 import { MeshGradient } from "@/components/webgpu/mesh-gradient"
@@ -16,20 +17,18 @@ export function CTA() {
         <div className="absolute inset-0 bg-solutio-bg/45" />
         <CornerScrim className="overflow-hidden rounded-panel" />
 
-        <div className="relative flex flex-col gap-2">
+        <Reveal className="relative flex flex-col gap-2">
           <Typography variant="heading-2">Schedule a conversation</Typography>
           <Typography variant="caption" className="text-solutio-text-muted">
             Confidential. Direct. No intermediaries.
           </Typography>
-        </div>
+        </Reveal>
 
-        <Button
-          variant="primary"
-          href={`mailto:${SITE.email}`}
-          className="relative"
-        >
-          Talk to us
-        </Button>
+        <Reveal delay={120} className="relative">
+          <Button variant="primary" href={`mailto:${SITE.email}`}>
+            Talk to us
+          </Button>
+        </Reveal>
       </div>
     </Container>
   )

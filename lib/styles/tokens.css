@@ -234,6 +234,53 @@
   );
 }
 
+/**
+ * Scroll-reveal transition.
+ *
+ * Only `opacity` and `transform` carry the movement — both composite on the
+ * GPU without repainting. The blur is a *bridge*, not the effect: it softens
+ * the arrival so elements seem to condense out of the background rather than
+ * slide in. It is kept small deliberately, because `filter` re-rasterises the
+ * element every frame and that cost scales with area, so a large radius on a
+ * full-width block is exactly the expensive thing to avoid.
+ *
+ * Hidden only under `.js`. Without scripting the observer never runs, and
+ * without this guard every revealed element would stay permanently invisible.
+ */
+@utility reveal {
+  --reveal-duration: 1000ms;
+  --reveal-shift: 1.5rem;
+  --reveal-blur: 4px;
+  --reveal-delay: 0ms;
+
+  .js & {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-shift), 0);
+    filter: blur(var(--reveal-blur));
+    transition:
+      opacity var(--reveal-duration) var(--ease-out-expo) var(--reveal-delay),
+      transform var(--reveal-duration) var(--ease-out-expo) var(--reveal-delay),
+      filter calc(var(--reveal-duration) * 0.6) var(--ease-out-quad)
+      var(--reveal-delay);
+  }
+
+  .js &[data-revealed] {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+
+  /* Keep the fade — it still signals arrival — but drop the travel and the
+     blur, which are the parts this preference is actually about. */
+  @media (--reduced-motion) {
+    .js & {
+      transform: none;
+      filter: none;
+      transition: opacity 400ms var(--ease-out-quad) var(--reveal-delay);
+    }
+  }
+}
+
 @utility pulse-dot {
   animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 

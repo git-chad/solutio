@@ -87,6 +87,13 @@ export default async function Layout({ children }: PropsWithChildren) {
       suppressHydrationWarning
     >
       <body>
+        {/*
+          Marks that scripting is available. The reveal styles hide their
+          elements only under `.js`, so without this the observer would never
+          run and every revealed element would stay invisible. Inline and first
+          in the body so it lands before anything below it paints.
+        */}
+        <script>{`document.documentElement.classList.add("js")`}</script>
         {/* Skip link for keyboard navigation accessibility */}
         <Suspense fallback={null}>
           <Link

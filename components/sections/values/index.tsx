@@ -1,5 +1,6 @@
 import { NumberedCard } from "@/components/ui/card"
 import { Container } from "@/components/ui/container"
+import { Reveal } from "@/components/ui/reveal"
 import { SectionLabel } from "@/components/ui/section-label"
 import { Typography } from "@/components/ui/typography"
 
@@ -18,18 +19,22 @@ export function Values() {
       className="flex flex-col gap-8 tablet:gap-12 pt-section"
     >
       <div className="flex flex-col gap-4">
-        <SectionLabel>Our Value</SectionLabel>
-        <Typography variant="heading-2" className="max-w-[42.5rem]">
-          In an increasingly complex tax environment, the real difference lies
-          in the quality of judgment.
-        </Typography>
+        <Reveal>
+          <SectionLabel>Our Value</SectionLabel>
+        </Reveal>
+        <Reveal delay={90}>
+          <Typography variant="heading-2" className="max-w-[42.5rem]">
+            In an increasingly complex tax environment, the real difference lies
+            in the quality of judgment.
+          </Typography>
+        </Reveal>
       </div>
 
       <ul className="grid desktop:grid-cols-4 grid-cols-1 tablet:grid-cols-2 gap-4">
         {values.map((value, i) => (
-          <NumberedCard as="li" key={value} index={i}>
-            {value}
-          </NumberedCard>
+          <Reveal as="li" key={value} delay={i * 70}>
+            <NumberedCard index={i}>{value}</NumberedCard>
+          </Reveal>
         ))}
       </ul>
     </Container>
