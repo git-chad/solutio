@@ -10,14 +10,13 @@ import {
   luminance,
   max,
   mix,
-  mx_fractal_noise_float,
   oneMinus,
-  smoothstep,
-  texture,
-  time,
-  uniform,
+  pow,
   positionGeometry,
   screenUV,
+  smoothstep,
+  texture,
+  uniform,
   vec2,
   vec3,
   vec4,
@@ -26,34 +25,50 @@ import {
   ClampToEdgeWrapping,
   LinearFilter,
   MeshBasicNodeMaterial,
-  SRGBColorSpace,
   type Node,
+  type Renderer,
+  SRGBColorSpace,
   type Texture,
   Vector2,
 } from "three/webgpu"
 import { candlesBar, candlesCell } from "@/components/webgpu/lib/candles"
-import type { PointerTrail } from "@/components/webgpu/lib/use-pointer-trail"
+import {
+  CHEAP_FLUID,
+  createFluidSimulation,
+} from "@/components/webgpu/lib/fluid/simulation"
+import type { FluidPointer } from "@/components/webgpu/lib/fluid/use-fluid-pointer"
 
 /** Halftone cell size in CSS px, at the reference height below. */
 const CELL_SIZE = 14
 /** Cell size is authored against this height so the pattern scales with it. */
 const REFERENCE_HEIGHT = 900
-/** Radius of a single trail point's influence, in UV. */
-const POINT_RADIUS = 0.17
-/** How far the noise field pushes the reveal edge around, in UV. */
-const NOISE_DISTORTION = 0.06
-/** Background colour behind the readability scrim, matching --color-solutio-bg. */
+/** Background colour, matching --color-solutio-bg. */
 const BG = 0.0392
-/** Darkening applied across the whole image, before the centre and bottom plates. */
-const BASE_SCRIM = 0.28
+/** Flat multiplier on the photograph. Below 1 it reads darker and less hazy. */
+const PHOTO_EXPOSURE = 0.44
+/** Raising the photo to this power deepens its shadows without crushing highlights. */
+const PHOTO_CONTRAST = 1.35
+/** Fraction of the hero height the bottom blend occupies. */
+const BLEND_HEIGHT = 0.42
+/** Curve of the bottom blend. Above 1 holds the image longer, then falls away fast. */
+const BLEND_EASE = 2.6
+/** Dye value at which the pattern is fully revealed. */
+const REVEAL_THRESHOLD = 0.22
 
 type SceneProps = {
   map: Texture
-  trail: PointerTrail
+  pointer: FluidPointer
 }
 
-export function Scene({ map, trail }: SceneProps) {
+export function Scene({ map, pointer }: SceneProps) {
   const size = useThree((state) => state.size)
+  // R3F v10 still types `state.gl` as WebGLRenderer even when the canvas is
+  // backed by WebGPURenderer. The simulation only calls setRenderTarget and
+  // renders a QuadMesh, which both back ends support identically.
+  const renderer = useThree((state) => state.gl) as unknown as Renderer
+
+  const fluid = useMemo(() => createFluidSimulation(CHEAP_FLUID), [])
+  useEffect(() => () => fluid.dispose(), [fluid])
 
   const { material, resolution, imageAspect } = useMemo(() => {
     const resolution = uniform(new Vector2(1, 1))
@@ -77,42 +92,24 @@ export function Scene({ map, trail }: SceneProps) {
       const scale = vec2(max(ratio, 1), max(float(1).div(ratio), 1))
       const fitted = vec2(uvCoord).sub(0.5).div(scale).add(0.5)
 
-      // `screenUV` runs bottom-up; the texture is stored top-down, so sampling
-      // it directly renders the image upside down.
+      // `screenUV` is y-down; the texture is stored y-up.
       return vec2(fitted.x, oneMinus(fitted.y))
     }
 
+    /** Darkened, slightly contrastier photograph. */
+    const photo = (uvCoord: Node) =>
+      pow(texture(map, cover(uvCoord)).rgb, PHOTO_CONTRAST).mul(PHOTO_EXPOSURE)
+
     /**
-     * Reveal mask driven by the pointer trail.
+     * Reveal mask: the fluid's dye field.
      *
-     * Each point contributes a soft disc. The field is unioned with `max`
-     * rather than summed, so overlapping points do not accumulate into a
-     * hard-edged blob. The sample position is displaced by drifting fractal
-     * noise first — that displacement is what stops the mask reading as a
-     * circle chasing the cursor.
+     * The simulation's targets are sampled y-up while `screenUV` is y-down, so
+     * the lookup is flipped to match.
      */
     const revealMask = () => {
-      const noise = mx_fractal_noise_float(
-        vec3(screenUV.mul(3.2), time.mul(0.12)),
-        3,
-        2,
-        0.5
-      )
-      const distorted = screenUV.add(noise.mul(NOISE_DISTORTION))
+      const dye = fluid.dyeNode.sample(vec2(screenUV.x, oneMinus(screenUV.y))).x
 
-      const field = float(0).toVar()
-      trail.points.forEach((point, index) => {
-        // Thin the tail so the trail tapers instead of ending abruptly.
-        const falloff = 1 - (index / trail.points.length) * 0.65
-        const disc = smoothstep(
-          POINT_RADIUS * falloff,
-          0,
-          distorted.distance(vec2(point))
-        )
-        field.assign(max(field, disc))
-      })
-
-      return clamp(field.mul(trail.strength), 0, 1)
+      return clamp(dye.div(REVEAL_THRESHOLD), 0, 1)
     }
 
     /**
@@ -125,8 +122,8 @@ export function Scene({ map, trail }: SceneProps) {
       const { centre, localX } = candlesCell(screenUV, resolution, cellSize)
 
       // Sample at the cell centre so each cell gets one flat colour.
-      const cellColor = texture(map, cover(centre))
-      const bar = candlesBar(luminance(cellColor.rgb), localX)
+      const cellColor = photo(centre)
+      const bar = candlesBar(luminance(cellColor), localX)
 
       return { cellColor, bar }
     }
@@ -140,46 +137,51 @@ export function Scene({ map, trail }: SceneProps) {
     material.vertexNode = vec4(positionGeometry.xy, 0, 1)
 
     material.colorNode = Fn(() => {
-      const baseColor = texture(map, cover(screenUV))
+      const base = photo(screenUV)
       const mask = revealMask()
       const { cellColor, bar } = pattern()
 
       // Off-bar falls back to a heavily darkened plate rather than black, so
       // the revealed area keeps the image's tonal structure while still
       // reading as a hard graphic pattern against the untouched photo.
-      const patternColor = mix(
-        cellColor.rgb.mul(0.04),
-        cellColor.rgb.mul(1.9),
-        bar
-      )
-
-      const composited = mix(baseColor.rgb, patternColor, mask)
+      const patternColor = mix(cellColor.mul(0.05), cellColor.mul(2.1), bar)
+      const composited = mix(base, patternColor, mask)
 
       /**
-       * Readability scrim for the headline. Composited here rather than as a
-       * DOM overlay so the pattern reveal sits underneath it and the text
-       * never loses contrast, however bright the pattern gets.
+       * Readability plate behind the headline. Composited here rather than as
+       * a DOM overlay so the reveal passes underneath it and the text cannot
+       * lose contrast however bright the pattern gets.
        */
       const radial = oneMinus(
-        smoothstep(0.05, 0.7, screenUV.sub(0.5).mul(vec2(1, 1.4)).length())
-      )
-      // `screenUV` is y-down, so the bottom of the screen is y = 1.
-      const bottom = smoothstep(0.5, 1, screenUV.y)
-      const scrim = clamp(
-        float(BASE_SCRIM).add(radial.mul(0.5)).add(bottom.mul(0.25)),
-        0,
-        0.9
+        smoothstep(0.05, 0.72, screenUV.sub(0.5).mul(vec2(1, 1.4)).length())
       )
 
-      return mix(composited, vec3(BG, BG, BG), scrim)
+      /**
+       * Blend into the section below.
+       *
+       * Eased rather than linear: a linear ramp reads as a visible band edge
+       * because the eye tracks the constant rate of change. Raising it to a
+       * power holds the photograph most of the way down and then falls away
+       * quickly into the flat background.
+       */
+      const blend = pow(
+        smoothstep(float(1).sub(BLEND_HEIGHT), 1, screenUV.y),
+        BLEND_EASE
+      )
+
+      const scrim = clamp(radial.mul(0.45), 0, 1)
+      const plated = mix(composited, vec3(BG, BG, BG), scrim)
+
+      return mix(plated, vec3(BG, BG, BG), blend)
     })()
 
     return { material, resolution, imageAspect }
-  }, [map, trail.points, trail.strength])
+  }, [map, fluid])
 
   useEffect(() => {
     resolution.value.set(size.width, size.height)
-  }, [resolution, size])
+    fluid.resize(size.width, size.height)
+  }, [resolution, size, fluid])
 
   useEffect(() => {
     const image = map.image as { width?: number; height?: number } | undefined
@@ -189,7 +191,14 @@ export function Scene({ map, trail }: SceneProps) {
   }, [imageAspect, map])
 
   useFrame((_state, delta) => {
-    trail.update(delta)
+    pointer.tick(delta)
+
+    const movement = pointer.consume()
+    if (movement) {
+      fluid.splat(renderer, movement.point, movement.delta, movement.amount)
+    }
+
+    fluid.update(renderer, delta)
   })
 
   return <ScreenQuad material={material} />
