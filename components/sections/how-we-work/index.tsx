@@ -1,4 +1,5 @@
 import { Container } from "@/components/ui/container"
+import { CornerScrim } from "@/components/ui/corner-scrim"
 import { Image } from "@/components/ui/image"
 import { MeshGradient } from "@/components/webgpu/mesh-gradient"
 import { SectionLabel } from "@/components/ui/section-label"
@@ -21,7 +22,7 @@ export function HowWeWork() {
       >
         <MeshGradient />
         <div className="absolute inset-0 bg-solutio-bg/70" />
-        <div aria-hidden className="scrim-corner absolute inset-0" />
+        <CornerScrim />
 
         <Container className="flex flex-col gap-4 py-12 tablet:pb-14">
           <SectionLabel>How We Work</SectionLabel>
