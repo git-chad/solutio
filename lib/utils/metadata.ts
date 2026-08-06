@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { getBaseUrl } from "@/lib/utils/base-url"
 
 /**
  * Metadata Generation Utilities
@@ -26,7 +27,7 @@ interface GenerateMetadataOptions {
   authors?: string[]
 }
 
-const APP_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"
+const APP_BASE_URL = getBaseUrl()
 
 /**
  * Generate complete metadata object for pages

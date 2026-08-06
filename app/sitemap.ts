@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next"
+import { getBaseUrl } from "@/lib/utils/base-url"
 
-const APP_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"
+const APP_BASE_URL = getBaseUrl()
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseRoutes: MetadataRoute.Sitemap = [

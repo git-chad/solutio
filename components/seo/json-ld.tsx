@@ -1,6 +1,7 @@
 import { SITE } from "@/lib/content/site"
+import { getBaseUrl } from "@/lib/utils/base-url"
 
-const APP_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"
+const APP_BASE_URL = getBaseUrl()
 
 /**
  * Organization / ProfessionalService structured data.

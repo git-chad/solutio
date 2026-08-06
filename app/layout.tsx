@@ -6,13 +6,14 @@ import { Link } from "@/components/ui/link"
 import { SITE } from "@/lib/content/site"
 import { fontsVariable } from "@/lib/styles/fonts"
 import "@/lib/styles/index.css"
+import { getBaseUrl } from "@/lib/utils/base-url"
 import { cn } from "@/lib/styles/cn"
 
 const APP_NAME = SITE.name
 const APP_DEFAULT_TITLE = `${SITE.name} — ${SITE.tagline}`
 const APP_TITLE_TEMPLATE = `%s — ${SITE.name}`
 const APP_DESCRIPTION = SITE.description
-const APP_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"
+const APP_BASE_URL = getBaseUrl()
 
 const geist = Geist({
   subsets: ["latin"],
