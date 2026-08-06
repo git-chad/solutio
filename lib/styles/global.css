@@ -32,6 +32,9 @@ html {
   --scrollbar-gutter: 0px;
   -moz-text-size-adjust: none;
   -webkit-text-size-adjust: none;
+  /* Lenis owns the scroll position; native smooth scrolling fights it for
+     control, so anchors are routed through `lenis.scrollTo` instead. */
+  scroll-behavior: auto;
   scrollbar-gutter: stable;
   text-rendering: optimizeLegibility;
   text-size-adjust: none;
@@ -39,6 +42,13 @@ html {
   &.lenis-stopped {
     --scrollbar-gutter: var(--scrollbar-width);
   }
+}
+
+/* The header is absolutely positioned, so in-page anchors would otherwise
+   land underneath it. */
+:target,
+[id]:where(section, footer) {
+  scroll-margin-top: calc(var(--header-height) + var(--gap));
 }
 
 html.overflow-hidden {

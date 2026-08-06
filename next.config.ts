@@ -59,8 +59,10 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  logging: {
+    browserToTerminal: true,
+  },
   experimental: {
-    browserDebugInfoInTerminal: true,
     optimizePackageImports: [
       "@react-three/drei",
       "@react-three/fiber",
@@ -112,19 +114,6 @@ const nextConfig: NextConfig = {
           value: "camera=(), microphone=(), geolocation=()",
         },
       ],
-    },
-  ],
-  redirects: async () => [
-    {
-      source: "/home",
-      destination: "/",
-      permanent: true,
-    },
-  ],
-  rewrites: async () => [
-    {
-      source: "/",
-      destination: "/home",
     },
   ],
 }

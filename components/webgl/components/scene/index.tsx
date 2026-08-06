@@ -1,7 +1,7 @@
 import { useFrame } from "@react-three/fiber"
 import { useMemo, useRef } from "react"
 import type { Mesh } from "three"
-import { abs, cos, sin, time, vec3 } from "three/src/nodes/TSL.js"
+import { abs, cos, sin, time, vec3 } from "three/tsl"
 import { MeshBasicNodeMaterial } from "three/webgpu"
 
 const Scene = () => {
@@ -17,12 +17,10 @@ const Scene = () => {
     const mat = new MeshBasicNodeMaterial()
     mat.colorNode = abs(vec3(sin(time), cos(time.mul(4)), sin(time.mul(2))))
     return mat
-
   }, [])
   return (
     <mesh ref={meshRef} material={material} scale={10}>
       <boxGeometry />
-      
     </mesh>
   )
 }

@@ -13,9 +13,12 @@
   --gap: 16px;
   --safe: 16px;
   --header-height: 58px;
+  /* Vertical rhythm between top-level sections. */
+  --section-gap: 4.5rem;
   --layout-width: calc(100vw - (2 * var(--safe)));
   --column-width: calc(
-    (var(--layout-width) - (var(--columns) - 1) * var(--gap)) / var(--columns)
+    (var(--layout-width) - (var(--columns) - 1) * var(--gap)) /
+    var(--columns)
   );
   --ease-in-quad: cubic-bezier(0.55, 0.085, 0.68, 0.53);
   --ease-in-cubic: cubic-bezier(0.55, 0.055, 0.675, 0.19);
@@ -45,11 +48,17 @@
   --color-pink: #ff73a6;
   --color-gray: #666666;
 
+  @variant tablet {
+    --section-gap: 5.5rem;
+    --header-height: 68px;
+  }
+
   @variant desktop {
     --device-width: 1440;
     --device-height: 816;
     --columns: 12;
-    --header-height: 98px;
+    --header-height: 76px;
+    --section-gap: 6.25rem;
   }
 }
 
@@ -83,29 +92,33 @@
   --color-gray-700: #333333;
   --color-gray-800: #1a1a1a;
 
-  /* Solutio palette */
-  --color-solutio-bg: #0A0A0A;
+  /* Solutio palette
+     Surfaces are white at low alpha so they read against --color-solutio-bg
+     without introducing a second background hue. */
+  --color-solutio-bg: #0a0a0a;
   --color-solutio-cta: #433123;
-  --color-solutio-card: #FFFFFF08;
-  --color-solutio-card-content: #FFFFFF0A;
-  --color-solutio-card-border: #FFFFFF0F;
-  --color-solutio-ghost: #FFFFFF1A;
-  --color-solutio-dot: #FFFFFF33;
-  --color-solutio-text: #FFFFFF;
-  --color-solutio-text-strong: #FFFFFFD9;
-  --color-solutio-text-body: #FFFFFFBF;
-  --color-solutio-text-muted: #FFFFFF80;
-  --color-solutio-text-subtle: #FFFFFF73;
-  --color-solutio-text-dim: #FFFFFF66;
-  --color-solutio-text-label: #FFFFFF59;
-  --color-solutio-text-section: #FFFFFF4D;
-  --color-solutio-text-ghost: #FFFFFF33;
+  --color-solutio-card: #ffffff0a;
+  --color-solutio-card-hover: #ffffff14;
+  --color-solutio-card-border: #ffffff0f;
+  --color-solutio-card-border-hover: #ffffff24;
+  --color-solutio-ghost: #ffffff1a;
+  --color-solutio-ghost-hover: #ffffff29;
+  /* Text ramp, strongest to faintest. */
+  --color-solutio-text-body: #ffffffbf;
+  --color-solutio-text-muted: #ffffff80;
+  --color-solutio-text-subtle: #ffffff73;
+  --color-solutio-text-label: #ffffff59;
+  --color-solutio-text-ghost: #ffffff33;
 
   --spacing: 0.25rem;
   --spacing-0: 0;
   --spacing-safe: var(--safe);
   --spacing-gap: var(--gap);
   --spacing-header-height: var(--header-height);
+  --spacing-section: var(--section-gap);
+
+  --radius-card: 1rem;
+  --radius-panel: 1.25rem;
 
   --font-*: initial;
   --font-mono: var(--geist-mono);
@@ -140,7 +153,7 @@
 }
 
 [data-theme="dark"] {
-  --color-primary: #0A0A0A;
+  --color-primary: #0a0a0a;
   --color-secondary: #ffffff;
   --color-contrast: #ff4d00;
 }
@@ -194,13 +207,96 @@
   @apply b-layout-block-inner b-grid;
 }
 
+/**
+ * Readability scrim for copy sitting in the bottom-left of a shader surface.
+ *
+ * The halftone runs edge to edge and its bars read straight through overlaid
+ * type, so the corner the copy occupies is darkened back toward the page
+ * background.
+ *
+ * The stops trace `(1 - t)^1.9` rather than ramping linearly. A two-stop
+ * gradient shows a visible edge because the eye tracks the constant rate of
+ * change; sampling a curve is what makes it read as a soft falloff. `circle
+ * farthest-corner` keeps it circular in screen space regardless of how wide the
+ * surface is, with the radius reaching the opposite corner.
+ */
+@utility scrim-corner {
+  background: radial-gradient(
+    circle farthest-corner at 0% 100%,
+    color-mix(in srgb, var(--color-solutio-bg) 92%, transparent) 0%,
+    color-mix(in srgb, var(--color-solutio-bg) 67%, transparent) 13%,
+    color-mix(in srgb, var(--color-solutio-bg) 47%, transparent) 26%,
+    color-mix(in srgb, var(--color-solutio-bg) 30%, transparent) 38%,
+    color-mix(in srgb, var(--color-solutio-bg) 16%, transparent) 51%,
+    color-mix(in srgb, var(--color-solutio-bg) 7%, transparent) 64%,
+    color-mix(in srgb, var(--color-solutio-bg) 1%, transparent) 77%,
+    transparent 85%
+  );
+}
+
+/**
+ * Scroll-reveal transition.
+ *
+ * Only `opacity` and `transform` carry the movement — both composite on the
+ * GPU without repainting. The blur is a *bridge*, not the effect: it softens
+ * the arrival so elements seem to condense out of the background rather than
+ * slide in. It is kept small deliberately, because `filter` re-rasterises the
+ * element every frame and that cost scales with area, so a large radius on a
+ * full-width block is exactly the expensive thing to avoid.
+ *
+ * Hidden only under `.js`. Without scripting the observer never runs, and
+ * without this guard every revealed element would stay permanently invisible.
+ */
+@utility reveal {
+  --reveal-duration: 1000ms;
+  --reveal-shift: 1.5rem;
+  --reveal-blur: 4px;
+  --reveal-delay: 0ms;
+
+  .js & {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-shift), 0);
+    filter: blur(var(--reveal-blur));
+    transition:
+      opacity var(--reveal-duration) var(--ease-out-expo) var(--reveal-delay),
+      transform var(--reveal-duration) var(--ease-out-expo) var(--reveal-delay),
+      filter calc(var(--reveal-duration) * 0.6) var(--ease-out-quad)
+      var(--reveal-delay);
+  }
+
+  .js &[data-revealed] {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+  }
+
+  /* Keep the fade — it still signals arrival — but drop the travel and the
+     blur, which are the parts this preference is actually about. */
+  @media (--reduced-motion) {
+    .js & {
+      transform: none;
+      filter: none;
+      transition: opacity 400ms var(--ease-out-quad) var(--reveal-delay);
+    }
+  }
+}
+
 @utility pulse-dot {
   animation: pulse-dot 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @media (--reduced-motion) {
+    animation: none;
+  }
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
 }
 
 @custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));

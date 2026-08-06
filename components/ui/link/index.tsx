@@ -118,6 +118,24 @@ export function Link({
     return <span {...getDivProps(props)}>{children}</span>
   }
 
+  /**
+   * In-page anchors are not routes.
+   *
+   * Routed through NextLink they call `preventDefault` and perform a hash
+   * navigation with `scroll` disabled by this component's default — so the URL
+   * gains a hash and nothing moves. A plain anchor leaves the event unhandled,
+   * which lets the smooth-scroll listener take it, and lets the browser fall
+   * back to native anchor behaviour if that listener is ever absent.
+   */
+  if (href.startsWith("#")) {
+    return (
+      // biome-ignore lint/plugin: this *is* the Link component the rule points at.
+      <a href={href} onClick={onClick} {...props}>
+        {children}
+      </a>
+    )
+  }
+
   // For SSR, check if it's external based on the href pattern
   const isExternalSSR =
     href.startsWith("http://") || href.startsWith("https://")

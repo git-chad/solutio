@@ -1,3 +1,10 @@
+@import "lenis/dist/lenis.css";
+/* Tailwind's default theme must load before `utilities.css`: utilities such as
+   `text-sm`, `rounded-sm`, `shadow-*` and `backdrop-blur-*` reference variables
+   it defines, and without them they emit `var(--text-sm)` against nothing and
+   silently do nothing. `tokens.css` then resets the namespaces we own
+   (`--color-*`, `--font-*`, `--ease-*`, `--breakpoint-*`) to `initial`. */
+@import "../../node_modules/tailwindcss/theme.css";
 @import "../../node_modules/tailwindcss/utilities.css";
 @import "./tokens.css";
 @import "./global.css";

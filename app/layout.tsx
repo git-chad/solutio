@@ -1,22 +1,21 @@
-import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
-import { type PropsWithChildren, Suspense } from "react";
-import { Link } from "@/components/ui/link";
-import { fontsVariable } from "@/lib/styles/fonts";
-import AppData from "@/package.json";
-import "@/lib/styles/index.css";
-import { cn } from "@/lib/styles/cn";
+import type { Metadata, Viewport } from "next"
+import { Geist } from "next/font/google"
+import { type PropsWithChildren, Suspense } from "react"
+import { Link } from "@/components/ui/link"
+import { SITE } from "@/lib/content/site"
+import { fontsVariable } from "@/lib/styles/fonts"
+import "@/lib/styles/index.css"
+import { cn } from "@/lib/styles/cn"
 
-const APP_NAME = AppData.name;
-const APP_DEFAULT_TITLE = "Basement Starter";
-const APP_TITLE_TEMPLATE = "%s - Basement Starter";
-const APP_DESCRIPTION = AppData.description;
-const APP_BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+const APP_NAME = SITE.name
+const APP_DEFAULT_TITLE = `${SITE.name} — ${SITE.tagline}`
+const APP_TITLE_TEMPLATE = `%s — ${SITE.name}`
+const APP_DESCRIPTION = SITE.description
+const APP_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"
 
 const geist = Geist({
   subsets: ["latin"],
-});
+})
 
 export const metadata: Metadata = {
   alternates: {
@@ -69,12 +68,14 @@ export const metadata: Metadata = {
       template: APP_TITLE_TEMPLATE,
     },
   },
-};
+}
 
 export const viewport: Viewport = {
-  colorScheme: "normal",
-  themeColor: "#000000",
-};
+  // The site is dark-only; declaring it keeps form controls and the scrollbar
+  // from rendering light.
+  colorScheme: "dark",
+  themeColor: "#0A0A0A",
+}
 
 export default async function Layout({ children }: PropsWithChildren) {
   return (
@@ -86,6 +87,13 @@ export default async function Layout({ children }: PropsWithChildren) {
       suppressHydrationWarning
     >
       <body>
+        {/*
+          Marks that scripting is available. The reveal styles hide their
+          elements only under `.js`, so without this the observer would never
+          run and every revealed element would stay invisible. Inline and first
+          in the body so it lands before anything below it paints.
+        */}
+        <script>{`document.documentElement.classList.add("js")`}</script>
         {/* Skip link for keyboard navigation accessibility */}
         <Suspense fallback={null}>
           <Link
@@ -99,5 +107,5 @@ export default async function Layout({ children }: PropsWithChildren) {
         {children}
       </body>
     </html>
-  );
+  )
 }

@@ -13,7 +13,7 @@
  * 4. Customize visualization
  */
 
-import * as THREE from 'three/webgpu';
+import * as THREE from "three/webgpu"
 import {
   Fn,
   If,
@@ -24,15 +24,15 @@ import {
   instancedArray,
   instanceIndex,
   hash,
-} from 'three/tsl';
+} from "three/tsl"
 
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OrbitControls } from "three/addons/controls/OrbitControls.js"
 
 // ============================================
 // CONFIGURATION
 // ============================================
 
-const PARTICLE_COUNT = 50000;
+const PARTICLE_COUNT = 50000
 
 // ============================================
 // STORAGE BUFFERS
@@ -41,8 +41,8 @@ const PARTICLE_COUNT = 50000;
 // Define your storage buffers here
 // Available types: 'float', 'vec2', 'vec3', 'vec4', 'int', 'uint'
 
-const positions = instancedArray(PARTICLE_COUNT, 'vec3');
-const velocities = instancedArray(PARTICLE_COUNT, 'vec3');
+const positions = instancedArray(PARTICLE_COUNT, "vec3")
+const velocities = instancedArray(PARTICLE_COUNT, "vec3")
 // Add more buffers as needed:
 // const colors = instancedArray(PARTICLE_COUNT, 'vec3');
 // const lifetimes = instancedArray(PARTICLE_COUNT, 'float');
@@ -52,7 +52,7 @@ const velocities = instancedArray(PARTICLE_COUNT, 'vec3');
 // UNIFORMS
 // ============================================
 
-const dt = uniform(0);
+const dt = uniform(0)
 // Add your uniforms here:
 // const gravity = uniform(-9.8);
 // const attractorPosition = uniform(new THREE.Vector3());
@@ -102,58 +102,58 @@ const dt = uniform(0);
  * Called once at startup
  */
 const computeInit = Fn(() => {
-  const position = positions.element(instanceIndex);
-  const velocity = velocities.element(instanceIndex);
+  const position = positions.element(instanceIndex)
+  const velocity = velocities.element(instanceIndex)
 
   // ========================================
   // IMPLEMENT YOUR INITIALIZATION HERE
   // ========================================
 
   // Example: Random positions in a cube
-  position.x.assign(hash(instanceIndex).sub(0.5).mul(10));
-  position.y.assign(hash(instanceIndex.add(1)).sub(0.5).mul(10));
-  position.z.assign(hash(instanceIndex.add(2)).sub(0.5).mul(10));
+  position.x.assign(hash(instanceIndex).sub(0.5).mul(10))
+  position.y.assign(hash(instanceIndex.add(1)).sub(0.5).mul(10))
+  position.z.assign(hash(instanceIndex.add(2)).sub(0.5).mul(10))
 
   // Example: Zero velocity
-  velocity.assign(vec3(0));
-})().compute(PARTICLE_COUNT);
+  velocity.assign(vec3(0))
+})().compute(PARTICLE_COUNT)
 
 /**
  * Update particles each frame
  * Called every frame in animation loop
  */
 const computeUpdate = Fn(() => {
-  const position = positions.element(instanceIndex);
-  const velocity = velocities.element(instanceIndex);
+  const position = positions.element(instanceIndex)
+  const velocity = velocities.element(instanceIndex)
 
   // ========================================
   // IMPLEMENT YOUR UPDATE LOGIC HERE
   // ========================================
 
   // Example: Simple gravity
-  velocity.y.addAssign(float(-9.8).mul(dt));
+  velocity.y.addAssign(float(-9.8).mul(dt))
 
   // Example: Update position
-  position.addAssign(velocity.mul(dt));
+  position.addAssign(velocity.mul(dt))
 
   // Example: Ground bounce
   If(position.y.lessThan(0), () => {
-    position.y.assign(0);
-    velocity.y.assign(velocity.y.negate().mul(0.8));
-  });
+    position.y.assign(0)
+    velocity.y.assign(velocity.y.negate().mul(0.8))
+  })
 
   // Example: Boundary wrapping
   // If(position.x.abs().greaterThan(5), () => {
   //   position.x.assign(position.x.negate());
   // });
-})().compute(PARTICLE_COUNT);
+})().compute(PARTICLE_COUNT)
 
 /**
  * Optional: Additional compute pass (e.g., for interactions)
  */
 const computeInteraction = Fn(() => {
-  const _position = positions.element(instanceIndex);
-  const _velocity = velocities.element(instanceIndex);
+  const _position = positions.element(instanceIndex)
+  const _velocity = velocities.element(instanceIndex)
 
   // ========================================
   // IMPLEMENT INTERACTION LOGIC HERE
@@ -164,7 +164,7 @@ const computeInteraction = Fn(() => {
   // const dist = toTarget.length();
   // const force = toTarget.normalize().mul(forceStrength).div(dist.add(0.1));
   // velocity.addAssign(force.mul(dt));
-})().compute(PARTICLE_COUNT);
+})().compute(PARTICLE_COUNT)
 
 // ============================================
 // VISUALIZATION
@@ -179,49 +179,49 @@ function createVisualization(scene) {
   // return createPointsVisualization(scene);
 
   // Option 2: Instanced Mesh
-  return createInstancedVisualization(scene);
+  return createInstancedVisualization(scene)
 }
 
 function _createPointsVisualization(scene) {
-  const geometry = new THREE.BufferGeometry();
+  const geometry = new THREE.BufferGeometry()
   geometry.setAttribute(
-    'position',
+    "position",
     new THREE.Float32BufferAttribute(new Float32Array(PARTICLE_COUNT * 3), 3)
-  );
+  )
 
-  const material = new THREE.PointsNodeMaterial();
+  const material = new THREE.PointsNodeMaterial()
 
   // Position from compute buffer
-  material.positionNode = positions.element(instanceIndex);
+  material.positionNode = positions.element(instanceIndex)
 
   // ========================================
   // CUSTOMIZE POINT APPEARANCE HERE
   // ========================================
 
-  material.sizeNode = float(3.0);
+  material.sizeNode = float(3.0)
 
   material.colorNode = Fn(() => {
     // Example: Color based on velocity
-    const velocity = velocities.element(instanceIndex);
-    const speed = velocity.length();
-    return mix(color(0x0066ff), color(0xff6600), speed.div(5).saturate());
-  })();
+    const velocity = velocities.element(instanceIndex)
+    const speed = velocity.length()
+    return mix(color(0x0066ff), color(0xff6600), speed.div(5).saturate())
+  })()
 
-  const points = new THREE.Points(geometry, material);
-  scene.add(points);
-  return points;
+  const points = new THREE.Points(geometry, material)
+  scene.add(points)
+  return points
 }
 
 function createInstancedVisualization(scene) {
   // Geometry for each instance
-  const geometry = new THREE.SphereGeometry(0.05, 8, 8);
+  const geometry = new THREE.SphereGeometry(0.05, 8, 8)
   // Or use simpler geometry for better performance:
   // const geometry = new THREE.IcosahedronGeometry(0.05, 0);
 
-  const material = new THREE.MeshStandardNodeMaterial();
+  const material = new THREE.MeshStandardNodeMaterial()
 
   // Position from compute buffer
-  material.positionNode = positions.element(instanceIndex);
+  material.positionNode = positions.element(instanceIndex)
 
   // ========================================
   // CUSTOMIZE MESH APPEARANCE HERE
@@ -229,102 +229,107 @@ function createInstancedVisualization(scene) {
 
   material.colorNode = Fn(() => {
     // Example: Color based on position
-    const position = positions.element(instanceIndex);
-    return color(0x0088ff).add(position.mul(0.05));
-  })();
+    const position = positions.element(instanceIndex)
+    return color(0x0088ff).add(position.mul(0.05))
+  })()
 
-  material.roughnessNode = float(0.5);
-  material.metalnessNode = float(0.2);
+  material.roughnessNode = float(0.5)
+  material.metalnessNode = float(0.2)
 
-  const mesh = new THREE.InstancedMesh(geometry, material, PARTICLE_COUNT);
-  scene.add(mesh);
-  return mesh;
+  const mesh = new THREE.InstancedMesh(geometry, material, PARTICLE_COUNT)
+  scene.add(mesh)
+  return mesh
 }
 
 // ============================================
 // MAIN SETUP
 // ============================================
 
-let camera;
-let scene;
-let renderer;
-let controls;
-let _visualization;
+let camera
+let scene
+let renderer
+let controls
+let _visualization
 
 async function init() {
   // Scene
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x111122);
+  scene = new THREE.Scene()
+  scene.background = new THREE.Color(0x111122)
 
   // Camera
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 5, 15);
+  camera = new THREE.PerspectiveCamera(
+    60,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    100
+  )
+  camera.position.set(0, 5, 15)
 
   // Lights
-  const ambientLight = new THREE.AmbientLight(0x404040);
-  scene.add(ambientLight);
+  const ambientLight = new THREE.AmbientLight(0x404040)
+  scene.add(ambientLight)
 
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-  directionalLight.position.set(5, 10, 5);
-  scene.add(directionalLight);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
+  directionalLight.position.set(5, 10, 5)
+  scene.add(directionalLight)
 
   // Optional: Ground plane
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(20, 20),
     new THREE.MeshStandardNodeMaterial({ color: 0x333333 })
-  );
-  ground.rotation.x = -Math.PI / 2;
-  scene.add(ground);
+  )
+  ground.rotation.x = -Math.PI / 2
+  scene.add(ground)
 
   // Renderer
-  renderer = new THREE.WebGPURenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  document.body.appendChild(renderer.domElement);
-  await renderer.init();
+  renderer = new THREE.WebGPURenderer({ antialias: true })
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  document.body.appendChild(renderer.domElement)
+  await renderer.init()
 
   // Initialize particles (renderer already initialized above)
-  renderer.compute(computeInit);
+  renderer.compute(computeInit)
 
   // Create visualization
-  _visualization = createVisualization(scene);
+  _visualization = createVisualization(scene)
 
   // Controls
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true;
-  controls.target.set(0, 2, 0);
+  controls = new OrbitControls(camera, renderer.domElement)
+  controls.enableDamping = true
+  controls.target.set(0, 2, 0)
 
   // Events
-  window.addEventListener('resize', onWindowResize);
+  window.addEventListener("resize", onWindowResize)
 
   // Start
-  renderer.setAnimationLoop(animate);
+  renderer.setAnimationLoop(animate)
 }
 
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+  renderer.setSize(window.innerWidth, window.innerHeight)
 }
 
-const clock = new THREE.Clock();
+const clock = new THREE.Clock()
 
 function animate() {
   // Update delta time uniform
-  dt.value = Math.min(clock.getDelta(), 0.1);
+  dt.value = Math.min(clock.getDelta(), 0.1)
 
   // Run compute shaders
-  renderer.compute(computeUpdate);
+  renderer.compute(computeUpdate)
   // renderer.compute(computeInteraction);
 
   // Update controls
-  controls.update();
+  controls.update()
 
   // Render
-  renderer.render(scene, camera);
+  renderer.render(scene, camera)
 }
 
-init().catch(console.error);
+init().catch(console.error)
 
 // Export for external control
 export {
@@ -333,5 +338,5 @@ export {
   dt,
   computeInit,
   computeUpdate,
-  computeInteraction
-};
+  computeInteraction,
+}

@@ -1,4 +1,6 @@
+import { NumberedCard } from "@/components/ui/card"
 import { Container } from "@/components/ui/container"
+import { Reveal } from "@/components/ui/reveal"
 import { SectionLabel } from "@/components/ui/section-label"
 import { Typography } from "@/components/ui/typography"
 
@@ -11,31 +13,30 @@ const values = [
 
 export function Values() {
   return (
-    <Container as="section" className="flex flex-col gap-12 pt-[7.5rem]">
+    <Container
+      as="section"
+      id="values"
+      className="flex flex-col gap-8 tablet:gap-12 pt-section"
+    >
       <div className="flex flex-col gap-4">
-        <SectionLabel>Our Value</SectionLabel>
-        <Typography variant="heading-2" className="max-w-[42.5rem]">
-          In an increasingly complex tax environment, the real difference lies
-          in the quality of judgment.
-        </Typography>
+        <Reveal>
+          <SectionLabel>Our Value</SectionLabel>
+        </Reveal>
+        <Reveal delay={90}>
+          <Typography variant="heading-2" className="max-w-[42.5rem]">
+            In an increasingly complex tax environment, the real difference lies
+            in the quality of judgment.
+          </Typography>
+        </Reveal>
       </div>
 
-      <div className="flex gap-4">
+      <ul className="grid desktop:grid-cols-4 grid-cols-1 tablet:grid-cols-2 gap-4">
         {values.map((value, i) => (
-          <div
-            key={value}
-            className="flex flex-1 flex-col gap-4 rounded-[1rem] border border-solutio-card-border bg-solutio-card p-7"
-          >
-            <Typography
-              variant="caption"
-              className="text-solutio-text-ghost"
-            >
-              {String(i + 1).padStart(2, "0")}
-            </Typography>
-            <Typography variant="body-strong">{value}</Typography>
-          </div>
+          <Reveal as="li" key={value} delay={i * 70}>
+            <NumberedCard index={i}>{value}</NumberedCard>
+          </Reveal>
         ))}
-      </div>
+      </ul>
     </Container>
   )
 }
