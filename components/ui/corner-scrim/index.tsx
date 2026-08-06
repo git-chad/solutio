@@ -14,15 +14,10 @@ import { cn } from "@/lib/styles/cn"
  * `solid` is where each layer is still fully opaque, `fade` where it reaches
  * transparent, both as a percentage of the corner-to-corner radius.
  */
-const BLUR_LAYERS = [
-  { blur: 2, solid: 58, fade: 85 },
-  { blur: 4, solid: 38, fade: 62 },
-  { blur: 8, solid: 20, fade: 42 },
-  { blur: 16, solid: 6, fade: 24 },
-]
+const BLUR_LAYERS = [{ blur: 2, solid: 58, fade: 85 }]
 
 const maskFor = (solid: number, fade: number) =>
-  `radial-gradient(circle farthest-corner at 0% 100%, #000 0%, #000 ${solid}%, transparent ${fade}%)`
+  `radial-gradient(circle farthest-corner at 0% 50%, #000 0%, #000 ${solid}%, transparent ${fade}%)`
 
 /**
  * Readability treatment for copy sitting in the bottom-left of a shader
