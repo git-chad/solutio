@@ -16,14 +16,14 @@ export function Hero() {
 
         <Typography
           variant="heading-1"
-          className="max-w-[29rem] text-balance text-center"
+          className="max-w-[34rem] text-balance text-center"
         >
           The value lies in how. We know how.
         </Typography>
 
         <Typography
           variant="body"
-          className="max-w-[30rem] text-pretty text-center"
+          className="max-w-[32rem] text-pretty text-center tablet:text-[1.125rem]/[1.875rem] text-base/[1.75rem] text-white"
         >
           We advise companies, individuals and families on complex tax and
           financial decisions, combining experience, judgment and strategic

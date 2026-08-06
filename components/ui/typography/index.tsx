@@ -11,7 +11,7 @@ const typographyVariants = cva("", {
   variants: {
     variant: {
       "heading-1":
-        "font-serif desktop:text-[4.5rem]/[4.75rem] tablet:text-[3.5rem]/[3.75rem] text-[2.75rem]/[2.875rem] text-white desktop:tracking-[-0.156rem] tablet:tracking-[-0.11rem] tracking-[-0.075rem]",
+        "font-serif desktop:text-[5.25rem]/[5.375rem] tablet:text-[4rem]/[4.25rem] text-[3rem]/[3.125rem] text-white desktop:tracking-[-0.18rem] tablet:tracking-[-0.125rem] tracking-[-0.082rem]",
       "heading-2":
         "font-serif desktop:text-[3.5rem]/[3.75rem] tablet:text-[2.875rem]/[3.125rem] text-[2.25rem]/[2.5rem] text-white desktop:tracking-[-0.125rem] tablet:tracking-[-0.09rem] tracking-[-0.06rem]",
       "heading-3":
@@ -19,7 +19,7 @@ const typographyVariants = cva("", {
       body: "tablet:text-base/[1.625rem] text-[0.9375rem]/[1.5rem] text-solutio-text-muted",
       "body-strong":
         "tablet:text-base/[1.625rem] text-[0.9375rem]/[1.5rem] text-solutio-text-body",
-      label: "font-medium text-[0.75rem]/[1rem] text-solutio-text-label",
+      label: "font-medium text-[0.8125rem]/[1.125rem] text-solutio-text-label",
       caption: "text-[0.875rem]/[1.25rem] text-solutio-text-subtle",
     },
   },
