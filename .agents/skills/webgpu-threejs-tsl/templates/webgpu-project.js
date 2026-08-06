@@ -14,28 +14,24 @@
  * 3. Replace placeholder content with your scene
  */
 
-import * as THREE from 'three/webgpu';
+import * as THREE from "three/webgpu"
 import {
   // Types
   float,
   color,
   positionWorld,
   normalWorld,
-
   // Camera
   cameraPosition,
-
   // Time
   time,
-
   // Math
   mix,
-
   // Functions
   Fn,
-} from 'three/tsl';
+} from "three/tsl"
 
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OrbitControls } from "three/addons/controls/OrbitControls.js"
 
 // ============================================
 // CONFIGURATION
@@ -57,23 +53,23 @@ const CONFIG = {
 
   // Controls
   enableDamping: true,
-  dampingFactor: 0.05
-};
+  dampingFactor: 0.05,
+}
 
 // ============================================
 // GLOBALS
 // ============================================
 
-let camera;
-let scene;
-let renderer;
-let controls;
-let clock;
+let camera
+let scene
+let renderer
+let controls
+let clock
 
 // Add your uniforms here
 const uniforms = {
   // Example: myColor: uniform(new THREE.Color(0xff0000))
-};
+}
 
 // ============================================
 // INITIALIZATION
@@ -81,11 +77,11 @@ const uniforms = {
 
 async function init() {
   // Clock
-  clock = new THREE.Clock();
+  clock = new THREE.Clock()
 
   // Scene
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(CONFIG.backgroundColor);
+  scene = new THREE.Scene()
+  scene.background = new THREE.Color(CONFIG.backgroundColor)
 
   // Camera
   camera = new THREE.PerspectiveCamera(
@@ -93,35 +89,35 @@ async function init() {
     window.innerWidth / window.innerHeight,
     CONFIG.near,
     CONFIG.far
-  );
-  camera.position.copy(CONFIG.position);
+  )
+  camera.position.copy(CONFIG.position)
 
   // Renderer
-  renderer = new THREE.WebGPURenderer({ antialias: CONFIG.antialias });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(CONFIG.pixelRatio);
-  document.body.appendChild(renderer.domElement);
+  renderer = new THREE.WebGPURenderer({ antialias: CONFIG.antialias })
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  renderer.setPixelRatio(CONFIG.pixelRatio)
+  document.body.appendChild(renderer.domElement)
 
   // Initialize WebGPU
-  await renderer.init();
+  await renderer.init()
 
   // Controls
-  controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = CONFIG.enableDamping;
-  controls.dampingFactor = CONFIG.dampingFactor;
+  controls = new OrbitControls(camera, renderer.domElement)
+  controls.enableDamping = CONFIG.enableDamping
+  controls.dampingFactor = CONFIG.dampingFactor
 
   // Setup scene content
-  setupLights();
-  setupScene();
+  setupLights()
+  setupScene()
 
   // Optional: Setup post-processing
   // setupPostProcessing();
 
   // Events
-  window.addEventListener('resize', onWindowResize);
+  window.addEventListener("resize", onWindowResize)
 
   // Start animation loop
-  renderer.setAnimationLoop(animate);
+  renderer.setAnimationLoop(animate)
 }
 
 // ============================================
@@ -130,14 +126,14 @@ async function init() {
 
 function setupLights() {
   // Ambient light
-  const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-  scene.add(ambientLight);
+  const ambientLight = new THREE.AmbientLight(0x404040, 0.5)
+  scene.add(ambientLight)
 
   // Directional light
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-  directionalLight.position.set(5, 10, 5);
-  directionalLight.castShadow = true;
-  scene.add(directionalLight);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 1)
+  directionalLight.position.set(5, 10, 5)
+  directionalLight.castShadow = true
+  scene.add(directionalLight)
 
   // Add more lights as needed
 }
@@ -148,24 +144,24 @@ function setupScene() {
   // ========================================
 
   // Example: Create a mesh with TSL material
-  const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const material = createExampleMaterial();
-  const mesh = new THREE.Mesh(geometry, material);
-  scene.add(mesh);
+  const geometry = new THREE.BoxGeometry(1, 1, 1)
+  const material = createExampleMaterial()
+  const mesh = new THREE.Mesh(geometry, material)
+  scene.add(mesh)
 
   // Example: Add a floor
-  const floorGeometry = new THREE.PlaneGeometry(10, 10);
+  const floorGeometry = new THREE.PlaneGeometry(10, 10)
   const floorMaterial = new THREE.MeshStandardNodeMaterial({
-    color: 0x333333
-  });
-  const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.y = -0.5;
-  scene.add(floor);
+    color: 0x333333,
+  })
+  const floor = new THREE.Mesh(floorGeometry, floorMaterial)
+  floor.rotation.x = -Math.PI / 2
+  floor.position.y = -0.5
+  scene.add(floor)
 }
 
 function createExampleMaterial() {
-  const material = new THREE.MeshStandardNodeMaterial();
+  const material = new THREE.MeshStandardNodeMaterial()
 
   // ========================================
   // CUSTOMIZE YOUR MATERIAL HERE
@@ -173,33 +169,32 @@ function createExampleMaterial() {
 
   // Example: Animated color
   material.colorNode = Fn(() => {
-    const t = time.mul(0.5).sin().mul(0.5).add(0.5);
-    return mix(color(0x0066ff), color(0xff6600), t);
-  })();
+    const t = time.mul(0.5).sin().mul(0.5).add(0.5)
+    return mix(color(0x0066ff), color(0xff6600), t)
+  })()
 
   // Example: PBR properties
-  material.roughnessNode = float(0.5);
-  material.metalnessNode = float(0.0);
+  material.roughnessNode = float(0.5)
+  material.metalnessNode = float(0.0)
 
   // Example: Simple fresnel rim
   material.emissiveNode = Fn(() => {
-    const viewDir = cameraPosition.sub(positionWorld).normalize();
-    const fresnel = float(1.0).sub(normalWorld.dot(viewDir).saturate()).pow(3.0);
-    return color(0x00ffff).mul(fresnel).mul(0.5);
-  })();
+    const viewDir = cameraPosition.sub(positionWorld).normalize()
+    const fresnel = float(1.0).sub(normalWorld.dot(viewDir).saturate()).pow(3.0)
+    return color(0x00ffff).mul(fresnel).mul(0.5)
+  })()
 
-  return material;
+  return material
 }
 
 // ============================================
 // POST-PROCESSING (Optional)
 // ============================================
 
-let postProcessing;
+let postProcessing
 
 function _setupPostProcessing() {
   // Uncomment and customize as needed
-
   // postProcessing = new THREE.RenderPipeline(renderer);
   // const scenePass = pass(scene, camera);
   // const sceneColor = scenePass.getTextureNode('output');
@@ -213,27 +208,27 @@ function _setupPostProcessing() {
 // ============================================
 
 function animate() {
-  const delta = clock.getDelta();
-  const _elapsed = clock.getElapsedTime();
+  const delta = clock.getDelta()
+  const _elapsed = clock.getElapsedTime()
 
   // ========================================
   // UPDATE YOUR SCENE HERE
   // ========================================
 
   // Example: Rotate mesh
-  const mesh = scene.children.find((child) => child.type === 'Mesh');
+  const mesh = scene.children.find((child) => child.type === "Mesh")
   if (mesh) {
-    mesh.rotation.y += delta * 0.5;
+    mesh.rotation.y += delta * 0.5
   }
 
   // Update controls
-  controls.update();
+  controls.update()
 
   // Render
   if (postProcessing) {
-    postProcessing.render();
+    postProcessing.render()
   } else {
-    renderer.render(scene, camera);
+    renderer.render(scene, camera)
   }
 }
 
@@ -242,16 +237,16 @@ function animate() {
 // ============================================
 
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight
+  camera.updateProjectionMatrix()
+  renderer.setSize(window.innerWidth, window.innerHeight)
 }
 
 // ============================================
 // START
 // ============================================
 
-init().catch(console.error);
+init().catch(console.error)
 
 // Export for external access if needed
-export { scene, camera, renderer, uniforms };
+export { scene, camera, renderer, uniforms }

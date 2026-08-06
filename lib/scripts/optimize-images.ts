@@ -27,8 +27,9 @@ const MAX_EDGE: Record<string, number> = {
   // Portrait, so the long edge is the height. Native is 880x1168, which is
   // already only ~2.3x the ~372px column it renders in — recompress, no resize.
   "approach.webp": 1168,
-  // Consumed as a shader texture, not through next/image. Left alone.
-  "hero-bg.webp": 0,
+  // Consumed as a shader texture, not through next/image. Capped anyway: at
+  // its original 5504x3072 it uploads as ~67MB of VRAM before mipmaps.
+  "hero-bg.webp": 2560,
 }
 
 const QUALITY = 80
