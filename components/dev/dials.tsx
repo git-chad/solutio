@@ -11,6 +11,10 @@ import {
   gradientControls,
 } from "@/components/webgpu/lib/gradient-controls"
 import {
+  GRADE_DEFAULTS as C,
+  gradeControls,
+} from "@/components/webgpu/lib/grade"
+import {
   HERO_DEFAULTS as H,
   heroControls,
 } from "@/components/webgpu/lib/hero-controls"
@@ -54,6 +58,26 @@ export function Dials() {
     barFloor: [D.barFloor, 0, 1, 0.01],
     barBias: [D.barBias, -0.5, 0.5, 0.01],
   })
+
+  const color = useDialKit("Color", {
+    brightness: [C.brightness, 0, 3, 0.01],
+    contrast: [C.contrast, 0, 3, 0.01],
+    gamma: [C.gamma, 0.2, 3, 0.01],
+    saturation: [C.saturation, 0, 2, 0.01],
+    tintAmount: [C.tintAmount, 0, 1, 0.01],
+    tint: { type: "color", default: C.tint },
+  })
+
+  useEffect(() => {
+    gradeControls.brightness.value = color.brightness
+    gradeControls.contrast.value = color.contrast
+    gradeControls.gamma.value = color.gamma
+    gradeControls.saturation.value = color.saturation
+    gradeControls.tintAmount.value = color.tintAmount
+    // `Color.set` decodes the sRGB hex into the linear working space the
+    // shader multiplies in, so the picker and the render agree.
+    gradeControls.tint.value.set(color.tint)
+  }, [color])
 
   useEffect(() => {
     heroControls.exposure.value = hero.exposure

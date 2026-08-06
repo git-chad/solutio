@@ -10,6 +10,7 @@ import {
   dither,
   roundedRectMask,
 } from "@/components/webgpu/lib/mesh-gradient"
+import { grade } from "@/components/webgpu/lib/grade"
 import { patterned } from "@/components/webgpu/lib/patterned"
 import { type Surface, useSurface } from "@/components/webgpu/lib/use-surface"
 import { cn } from "@/lib/styles/cn"
@@ -37,12 +38,16 @@ function GradientScene({
       ...(palette ? { palette } : {}),
     })
 
+    // Graded after the halftone, so brightness and contrast move the finished
+    // surface rather than only the lit bars.
     mat.colorNode = Fn(() =>
-      patterned({
-        field,
-        resolution: surface.resolution,
-        uv: viewportUV,
-      }).add(dither())
+      grade(
+        patterned({
+          field,
+          resolution: surface.resolution,
+          uv: viewportUV,
+        })
+      ).add(dither())
     )()
 
     if (radius > 0) {
