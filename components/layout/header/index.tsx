@@ -5,6 +5,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/ui/container"
 import { Link } from "@/components/ui/link"
+import { Wordmark } from "@/components/ui/wordmark"
 import { NAV_LINKS, SITE } from "@/lib/content/site"
 import { cn } from "@/lib/styles/cn"
 import { INTERACTIVE, WORDMARK } from "@/lib/styles/motion"
@@ -52,9 +53,12 @@ export function Header() {
         <Link
           href="/"
           aria-label={`${SITE.name} — home`}
-          className={cn(INTERACTIVE, WORDMARK, "rounded-sm")}
+          // `inline-flex` so the box hugs the mark: an inline SVG otherwise
+          // sits on the text baseline and drags a descender's worth of space
+          // below it, which throws the bar's vertical centring out.
+          className={cn(INTERACTIVE, "inline-flex rounded-sm")}
         >
-          {SITE.name}
+          <Wordmark className={WORDMARK} />
         </Link>
 
         <nav aria-label="Main" className="flex items-center gap-1">

@@ -15,6 +15,9 @@ export const INTERACTIVE =
 /**
  * The wordmark. Shared by the header and the footer at the same size, so the
  * brand reads identically at both ends of the page.
+ *
+ * A height, not a type scale: the mark is an SVG whose viewBox fixes its aspect
+ * ratio. It steps with the header, which is 58/68/76px tall — keeping the mark
+ * a bit over a third of the bar at every breakpoint.
  */
-export const WORDMARK =
-  "font-serif text-white tracking-[-0.02em] text-[1.625rem]/8 desktop:text-[1.875rem]/9"
+export const WORDMARK = "h-[1.375rem] text-white tablet:h-6 desktop:h-7"
