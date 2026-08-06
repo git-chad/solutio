@@ -10,6 +10,10 @@ import {
   GRADIENT_DEFAULTS as D,
   gradientControls,
 } from "@/components/webgpu/lib/gradient-controls"
+import {
+  HERO_DEFAULTS as H,
+  heroControls,
+} from "@/components/webgpu/lib/hero-controls"
 
 /**
  * Live controls for the gradient surfaces.
@@ -23,6 +27,17 @@ import {
  * separate production path to keep in sync.
  */
 export function Dials() {
+  const hero = useDialKit("Hero", {
+    exposure: [H.exposure, 0, 2, 0.01],
+    contrast: [H.contrast, 0.5, 3, 0.01],
+    parallax: [H.parallax, 0, 0.12, 0.001],
+    parallaxPivot: [H.parallaxPivot, 0, 1, 0.01],
+    parallaxMargin: [H.parallaxMargin, 0, 0.3, 0.005],
+    scrim: [H.scrim, 0, 1, 0.01],
+    blendHeight: [H.blendHeight, 0, 1, 0.01],
+    blendEase: [H.blendEase, 0.5, 6, 0.1],
+  })
+
   const gradient = useDialKit("Gradient", {
     // [default, min, max, step]
     speed: [D.speed, 0, 20, 0.1],
@@ -39,6 +54,17 @@ export function Dials() {
     barFloor: [D.barFloor, 0, 1, 0.01],
     barBias: [D.barBias, -0.5, 0.5, 0.01],
   })
+
+  useEffect(() => {
+    heroControls.exposure.value = hero.exposure
+    heroControls.contrast.value = hero.contrast
+    heroControls.parallax.value = hero.parallax
+    heroControls.parallaxPivot.value = hero.parallaxPivot
+    heroControls.parallaxMargin.value = hero.parallaxMargin
+    heroControls.scrim.value = hero.scrim
+    heroControls.blendHeight.value = hero.blendHeight
+    heroControls.blendEase.value = hero.blendEase
+  }, [hero])
 
   useEffect(() => {
     gradientControls.speed.value = gradient.speed

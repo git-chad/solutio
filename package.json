@@ -40,6 +40,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.14",
+    "@huggingface/transformers": "^4.2.0",
     "@next/bundle-analyzer": "^16",
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4",
@@ -60,6 +61,8 @@
     "@biomejs/biome",
     "@tailwindcss/oxide",
     "esbuild",
+    "onnxruntime-node",
+    "protobufjs",
     "sharp"
   ]
 }

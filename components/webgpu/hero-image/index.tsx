@@ -7,20 +7,31 @@ import { Scene } from "@/components/webgpu/hero-image/scene"
 import { type Surface, useSurface } from "@/components/webgpu/lib/use-surface"
 
 const TEXTURE = "/images/hero-bg.webp"
+/** Generated offline by `lib/scripts/generate-depth.ts`. */
+const DEPTH = "/images/hero-bg-depth.webp"
 
-function SceneWithTexture({ surface }: { surface: Surface }) {
-  const map = useTexture(TEXTURE)
+function SceneWithTextures({ surface }: { surface: Surface }) {
+  const [map, depthMap] = useTexture([TEXTURE, DEPTH])
 
   useFrame((_state, delta) => {
     surface.tick(delta)
   })
 
-  return <Scene map={map} resolution={surface.resolution} />
+  if (!(map && depthMap)) return null
+
+  return (
+    <Scene
+      map={map}
+      depthMap={depthMap}
+      resolution={surface.resolution}
+      pointer={surface.pointer}
+    />
+  )
 }
 
 /**
- * Hero background: the photograph with the candles halftone resolving out of
- * its lighter areas, drawn into the shared canvas through a `<View>`.
+ * Hero background: the photograph, shifted by its own depth map as the pointer
+ * moves, drawn into the shared canvas through a `<View>`.
  */
 export function HeroImage() {
   const surface = useSurface()
@@ -35,7 +46,7 @@ export function HeroImage() {
       className="pointer-events-none absolute inset-0"
     >
       <Suspense fallback={null}>
-        <SceneWithTexture surface={surface} />
+        <SceneWithTextures surface={surface} />
       </Suspense>
     </View>
   )

@@ -6,6 +6,8 @@ import { Vector2 } from "three/webgpu"
 
 /** Seconds for hover strength to reach full, and to return to zero. */
 const HOVER_FADE = 0.5
+/** Per-frame fraction the eased pointer closes on the real one, at 60fps. */
+const POINTER_EASE = 0.07
 
 export type Surface = {
   /** Attach to the element the effect covers. */
@@ -19,7 +21,14 @@ export type Surface = {
    * `useThree().size`, which under a shared canvas reports the whole viewport.
    */
   resolution: ReturnType<typeof uniform<Vector2>>
-  /** Advance the hover fade. Call once per frame. */
+  /**
+   * Pointer position over the element, -1..1 from the centre, eased.
+   *
+   * Eased rather than raw so effects driven by it feel weighted instead of
+   * snapping to the cursor.
+   */
+  pointer: ReturnType<typeof uniform<Vector2>>
+  /** Advance the hover fade and pointer easing. Call once per frame. */
   tick: (delta: number) => void
 }
 
@@ -38,17 +47,20 @@ export type Surface = {
 export function useSurface(): Surface {
   const ref = useRef<HTMLDivElement>(null)
 
-  const { hover, aspect, resolution } = useMemo(
+  const { hover, aspect, resolution, pointer } = useMemo(
     () => ({
       hover: uniform(0),
       aspect: uniform(1),
       resolution: uniform(new Vector2(1, 1)),
+      pointer: uniform(new Vector2(0, 0)),
     }),
     []
   )
 
   const hovering = useRef(false)
   const hoverValue = useRef(0)
+  const target = useRef({ x: 0, y: 0 })
+  const eased = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
     const element = ref.current
@@ -70,6 +82,13 @@ export function useSurface(): Surface {
         event.clientX <= rect.right &&
         event.clientY >= rect.top &&
         event.clientY <= rect.bottom
+
+      if (rect.width === 0 || rect.height === 0) return
+
+      target.current = {
+        x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        y: ((event.clientY - rect.top) / rect.height) * 2 - 1,
+      }
     }
 
     const onPointerLeave = () => {
@@ -99,6 +118,7 @@ export function useSurface(): Surface {
       hover,
       aspect,
       resolution,
+      pointer,
       tick(delta: number) {
         const direction = hovering.current ? 1 : -1
         hoverValue.current = Math.max(
@@ -106,8 +126,19 @@ export function useSurface(): Surface {
           Math.min(1, hoverValue.current + (direction * delta) / HOVER_FADE)
         )
         hover.value = hoverValue.current
+
+        // Normalised to 60fps so the weight does not change with refresh rate,
+        // and clamped so a stalled tab does not snap the pointer on resume.
+        const step = Math.min(1, POINTER_EASE * Math.min(delta, 0.1) * 60)
+        // Return to centre when the pointer leaves, rather than freezing where
+        // it left the element.
+        const toX = hovering.current ? target.current.x : 0
+        const toY = hovering.current ? target.current.y : 0
+        eased.current.x += (toX - eased.current.x) * step
+        eased.current.y += (toY - eased.current.y) * step
+        pointer.value.set(eased.current.x, eased.current.y)
       },
     }),
-    [hover, aspect, resolution]
+    [hover, aspect, resolution, pointer]
   )
 }
