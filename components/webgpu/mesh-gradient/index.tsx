@@ -3,12 +3,14 @@
 import { ScreenQuad, View } from "@react-three/drei"
 import { useFrame } from "@react-three/fiber"
 import { useMemo } from "react"
-import { positionGeometry, vec4 } from "three/tsl"
+import { Fn, positionGeometry, vec4, viewportUV } from "three/tsl"
 import { MeshBasicNodeMaterial } from "three/webgpu"
 import {
-  meshGradient,
+  createMeshGradient,
+  dither,
   roundedRectMask,
 } from "@/components/webgpu/lib/mesh-gradient"
+import { patterned } from "@/components/webgpu/lib/patterned"
 import { type Surface, useSurface } from "@/components/webgpu/lib/use-surface"
 import { cn } from "@/lib/styles/cn"
 
@@ -28,11 +30,20 @@ function GradientScene({
     // otherwise run them through the view's camera; writing the position
     // straight through makes the quad fill exactly the view's scissor rect.
     mat.vertexNode = vec4(positionGeometry.xy, 0, 1)
-    mat.colorNode = meshGradient({
+
+    const field = createMeshGradient({
       hover: surface.hover,
       aspect: surface.aspect,
       ...(palette ? { palette } : {}),
     })
+
+    mat.colorNode = Fn(() =>
+      patterned({
+        field,
+        resolution: surface.resolution,
+        uv: viewportUV,
+      }).add(dither())
+    )()
 
     if (radius > 0) {
       mat.transparent = true
@@ -50,12 +61,8 @@ function GradientScene({
 }
 
 /**
- * Animated mesh gradient, filling its container.
- *
- * Renders a tracked div plus a `<View>` that draws into the shared canvas at
- * that div's rect. The div itself stays empty and non-interactive — it exists
- * only to give the view a rect to follow, so content layered above it keeps
- * working normally.
+ * Animated greyscale mesh gradient, filling its container, with the candles
+ * halftone resolving out of its lighter areas.
  */
 export function MeshGradient({
   className,

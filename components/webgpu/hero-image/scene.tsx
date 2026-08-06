@@ -1,24 +1,22 @@
 "use client"
 
 import { ScreenQuad } from "@react-three/drei"
-import { useFrame, useThree } from "@react-three/fiber"
 import { useEffect, useMemo } from "react"
 import {
   clamp,
   float,
   Fn,
-  luminance,
   max,
   mix,
   oneMinus,
-  pow,
   positionGeometry,
-  viewportUV,
+  pow,
   smoothstep,
   texture,
   uniform,
   vec2,
   vec4,
+  viewportUV,
 } from "three/tsl"
 import {
   ClampToEdgeWrapping,
@@ -26,21 +24,13 @@ import {
   LinearFilter,
   MeshBasicNodeMaterial,
   type Node,
-  type Renderer,
   SRGBColorSpace,
   type Texture,
+  type Vector2,
 } from "three/webgpu"
-import { candlesBar, candlesCell } from "@/components/webgpu/lib/candles"
-import {
-  CHEAP_FLUID,
-  createFluidSimulation,
-} from "@/components/webgpu/lib/fluid/simulation"
-import type { FluidPointer } from "@/components/webgpu/lib/fluid/use-fluid-pointer"
+import { dither } from "@/components/webgpu/lib/mesh-gradient"
+import { patterned } from "@/components/webgpu/lib/patterned"
 
-/** Halftone cell size in CSS px, at the reference height below. */
-const CELL_SIZE = 8
-/** Cell size is authored against this height so the pattern scales with it. */
-const REFERENCE_HEIGHT = 900
 /**
  * Must stay in sync with `--color-solutio-bg`.
  *
@@ -53,37 +43,20 @@ const BG_HEX = "#0A0A0A"
 const PHOTO_EXPOSURE = 0.44
 /** Raising the photo to this power deepens its shadows without crushing highlights. */
 const PHOTO_CONTRAST = 1.35
+/** Luminance window over which the halftone emerges from the photo. */
+const PATTERN_START = 0.13
+const PATTERN_FULL = 0.34
 /** Fraction of the hero height the bottom blend occupies. */
 const BLEND_HEIGHT = 0.42
 /** Curve of the bottom blend. Above 1 holds the image longer, then falls away fast. */
 const BLEND_EASE = 2.6
-/** Dye level at which a cell is fully given over to the pattern. */
-const REVEAL_THRESHOLD = 0.16
-/** How much the photo's own luminance contributes to bar width. */
-const LUMA_WEIGHT = 0.5
-/** How much the fluid widens the bars on top of that. */
-const DYE_WEIGHT = 0.9
-/** Brightness of a lit bar, relative to the photo. */
-const PATTERN_GAIN = 2.2
 
 type SceneProps = {
   map: Texture
-  pointer: FluidPointer
+  resolution: ReturnType<typeof uniform<Vector2>>
 }
 
-export function Scene({ map, pointer }: SceneProps) {
-  // R3F v10 still types `state.gl` as WebGLRenderer even when the canvas is
-  // backed by WebGPURenderer. The simulation only calls setRenderTarget and
-  // renders a QuadMesh, which both back ends support identically.
-  const renderer = useThree((state) => state.gl) as unknown as Renderer
-
-  const fluid = useMemo(() => createFluidSimulation(CHEAP_FLUID), [])
-  useEffect(() => () => fluid.dispose(), [fluid])
-
-  // The view's own pixel size, measured from the tracked element — under the
-  // shared canvas `useThree().size` is the whole viewport, not this view.
-  const resolution = pointer.resolution
-
+export function Scene({ map, resolution }: SceneProps) {
   const { material, imageAspect } = useMemo(() => {
     const imageAspect = uniform(1)
     // `Color` decodes the sRGB hex into the linear working space the shader
@@ -116,45 +89,6 @@ export function Scene({ map, pointer }: SceneProps) {
     const photo = (uvCoord: Node) =>
       pow(texture(map, cover(uvCoord)).rgb, PHOTO_CONTRAST).mul(PHOTO_EXPOSURE)
 
-    /**
-     * The fluid's dye field. The simulation's targets are sampled y-up while
-     * `viewportUV` is y-down, so the lookup is flipped to match.
-     */
-    const dyeAt = (uvCoord: Node) =>
-      fluid.dyeNode.sample(vec2(vec2(uvCoord).x, oneMinus(vec2(uvCoord).y))).x
-
-    /**
-     * Candles halftone, taking its colour from the image so the effect reads as
-     * the photograph resolving into bars rather than as an overlay on top.
-     *
-     * The fluid is an input to the pattern, not a layer on top of it. Both the
-     * dye and the photo are sampled at the *cell centre*, which quantises the
-     * fluid to the halftone grid — so what you see is bars widening and
-     * appearing, never the liquid's own silhouette. Sampling per pixel instead
-     * would draw the dye's smooth outline straight onto the screen and turn the
-     * simulation into a visible blob chasing the cursor.
-     */
-    const pattern = () => {
-      // Scale the cell with the viewport so the halftone keeps its density.
-      const cellSize = float(CELL_SIZE).mul(resolution.y).div(REFERENCE_HEIGHT)
-      const { centre, localX } = candlesCell(viewportUV, resolution, cellSize)
-
-      const cellColor = photo(centre)
-      const cellDye = dyeAt(centre)
-
-      // Fluid widens the bars on top of the photo's own luminance, so the
-      // pattern opens up where the fluid has been.
-      const value = luminance(cellColor)
-        .mul(LUMA_WEIGHT)
-        .add(cellDye.mul(DYE_WEIGHT))
-
-      return {
-        cellColor,
-        bar: candlesBar(value, localX),
-        presence: clamp(cellDye.div(REVEAL_THRESHOLD), 0, 1),
-      }
-    }
-
     const material = new MeshBasicNodeMaterial()
 
     // ScreenQuad is a single oversized triangle whose vertices are already in
@@ -164,19 +98,23 @@ export function Scene({ map, pointer }: SceneProps) {
     material.vertexNode = vec4(positionGeometry.xy, 0, 1)
 
     material.colorNode = Fn(() => {
-      const base = photo(viewportUV)
-      const { cellColor, bar, presence } = pattern()
-
-      // Lit bars are the photo brightened; the gaps drop to the section
-      // background, so a revealed cell reads as pattern-on-background rather
-      // than as a tinted patch of photograph.
-      const patternColor = mix(background, cellColor.mul(PATTERN_GAIN), bar)
-      const composited = mix(base, patternColor, presence)
+      // Same rule as the gradients: the halftone resolves out of the lighter
+      // parts of the image, so the photograph and the gradients read as the
+      // same material rather than as two unrelated effects.
+      const composited = patterned({
+        field: photo,
+        resolution,
+        uv: viewportUV,
+        // Tuned to the graded photo's range, which tops out near
+        // PHOTO_EXPOSURE rather than at 1.
+        start: PATTERN_START,
+        full: PATTERN_FULL,
+      })
 
       /**
        * Readability plate behind the headline. Composited here rather than as
-       * a DOM overlay so the reveal passes underneath it and the text cannot
-       * lose contrast however bright the pattern gets.
+       * a DOM overlay so the pattern sits underneath it and the text cannot
+       * lose contrast however bright the highlights get.
        */
       const radial = oneMinus(
         smoothstep(0.05, 0.72, viewportUV.sub(0.5).mul(vec2(1, 1.4)).length())
@@ -198,11 +136,11 @@ export function Scene({ map, pointer }: SceneProps) {
       const scrim = clamp(radial.mul(0.45), 0, 1)
       const plated = mix(composited, background, scrim)
 
-      return mix(plated, background, blend)
+      return mix(plated, background, blend).add(dither())
     })()
 
     return { material, imageAspect }
-  }, [map, fluid, resolution])
+  }, [map, resolution])
 
   useEffect(() => {
     const image = map.image as { width?: number; height?: number } | undefined
@@ -210,19 +148,6 @@ export function Scene({ map, pointer }: SceneProps) {
       imageAspect.value = image.width / image.height
     }
   }, [imageAspect, map])
-
-  useFrame((_state, delta) => {
-    // Keeps splats circular as the view resizes; cheap enough to just set.
-    fluid.resize(resolution.value.x, resolution.value.y)
-    pointer.tick(delta)
-
-    const movement = pointer.consume()
-    if (movement) {
-      fluid.splat(renderer, movement.point, movement.delta, movement.amount)
-    }
-
-    fluid.update(renderer, delta)
-  })
 
   return <ScreenQuad material={material} />
 }

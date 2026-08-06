@@ -32,17 +32,15 @@ html {
   --scrollbar-gutter: 0px;
   -moz-text-size-adjust: none;
   -webkit-text-size-adjust: none;
-  scroll-behavior: smooth;
+  /* Lenis owns the scroll position; native smooth scrolling fights it for
+     control, so anchors are routed through `lenis.scrollTo` instead. */
+  scroll-behavior: auto;
   scrollbar-gutter: stable;
   text-rendering: optimizeLegibility;
   text-size-adjust: none;
 
   &.lenis-stopped {
     --scrollbar-gutter: var(--scrollbar-width);
-  }
-
-  @media (--reduced-motion) {
-    scroll-behavior: auto;
   }
 }
 

@@ -1,8 +1,30 @@
 "use client"
 
 import { View } from "@react-three/drei"
-import { Canvas } from "@react-three/fiber"
+import { Canvas, useFrame } from "@react-three/fiber"
+import type Lenis from "lenis"
+import { useLenis } from "lenis/react"
+import { scrollTick } from "@/components/layout/smooth-scroll/tick"
 import { FORCE_WEBGL } from "@/lib/renderer"
+
+/**
+ * Advances Lenis from inside the canvas's frame loop.
+ *
+ * Views measure their DOM rect in a callback scheduled `after: "render"`, while
+ * this runs in the default update phase — so within a frame the scroll position
+ * is applied first and the views measure against it. Left on its own RAF, Lenis
+ * would race the renderer and the effects would trail the page while scrolling.
+ */
+function LenisSync({ lenis }: { lenis: Lenis }) {
+  useFrame(() => {
+    const now = performance.now()
+    lenis.raf(now)
+    // Tells the watchdog in `SmoothScroll` that scrolling is being driven.
+    scrollTick.last = now
+  })
+
+  return null
+}
 
 /**
  * The one WebGPU canvas on the page.
@@ -22,6 +44,11 @@ import { FORCE_WEBGL } from "@/lib/renderer"
  * effects that need the cursor track the window and hit-test their own rect.
  */
 export function SharedCanvas() {
+  // Read outside the Canvas: R3F is a separate reconciler, so React context
+  // from the DOM tree does not reach components rendered inside it. Passing the
+  // instance down as a prop crosses that boundary fine.
+  const lenis = useLenis()
+
   return (
     // The positioning lives on this wrapper, not on `<Canvas>`: R3F owns its
     // container element (`r3f-canvas-container`) and does not merge a className
@@ -43,6 +70,7 @@ export function SharedCanvas() {
             : { antialias: false, alpha: true }
         }
       >
+        {lenis ? <LenisSync lenis={lenis} /> : null}
         <View.Port />
       </Canvas>
     </div>

@@ -17,54 +17,56 @@ import {
 import { Color, type Node, type Vector2 } from "three/webgpu"
 
 /**
- * Palette sampled from `banner-blur.webp`, the placeholder this replaces.
- *
- * The source runs warm ivory and sand through the upper left into cool slate
- * at the lower right. Keeping that warm-to-cool diagonal is what makes the
- * generated version read as the same image rather than merely the same hues.
+ * Greyscale ramp, keeping the tonal *structure* of `banner-blur.webp` — the
+ * placeholder this replaces — without its warmth. The source ran ivory at the
+ * top left into deep slate at the bottom right; these are the luminances of
+ * those stops, so the gradient still reads as the same image in mono.
  */
 export const GRADIENT_PALETTE = [
-  "#F5F1DE", // ivory
-  "#E6CBA9", // sand
-  "#B27E60", // terracotta
-  "#5F5450", // taupe
-  "#2A333D", // slate
-  "#141C25", // deep slate
+  "#EDEDED",
+  "#C4C4C4",
+  "#8C8C8C",
+  "#5A5A5A",
+  "#2E2E2E",
+  "#141414",
 ] as const
 
 /**
- * Where each colour sits, and how it drifts.
+ * Where each tone sits, and how it drifts.
  *
  * `home` is the rest position in UV; `drift` is the radius of its wander;
  * `speed` and `phase` desynchronise the points so the field never visibly
- * loops. Ordering runs warm (top-left) to cool (bottom-right).
+ * loops. Ordering runs light (top-left) to dark (bottom-right).
  */
 const POINTS = [
-  { home: [0.12, 0.12], drift: [0.1, 0.07], speed: 0.11, phase: 0.0 },
-  { home: [0.42, 0.2], drift: [0.13, 0.09], speed: 0.14, phase: 1.7 },
-  { home: [0.22, 0.62], drift: [0.11, 0.12], speed: 0.09, phase: 3.1 },
-  { home: [0.72, 0.45], drift: [0.14, 0.1], speed: 0.12, phase: 4.6 },
-  { home: [0.85, 0.78], drift: [0.1, 0.08], speed: 0.1, phase: 2.3 },
-  { home: [0.55, 0.95], drift: [0.12, 0.06], speed: 0.13, phase: 5.4 },
+  { home: [0.12, 0.12], drift: [0.14, 0.1], speed: 0.11, phase: 0.0 },
+  { home: [0.42, 0.2], drift: [0.17, 0.12], speed: 0.14, phase: 1.7 },
+  { home: [0.22, 0.62], drift: [0.15, 0.16], speed: 0.09, phase: 3.1 },
+  { home: [0.72, 0.45], drift: [0.18, 0.13], speed: 0.12, phase: 4.6 },
+  { home: [0.85, 0.78], drift: [0.14, 0.11], speed: 0.1, phase: 2.3 },
+  { home: [0.55, 0.95], drift: [0.16, 0.09], speed: 0.13, phase: 5.4 },
 ] as const
 
-/** Falloff radius of each colour point. Larger blends softer. */
+/**
+ * Global multiplier on every animation rate.
+ *
+ * The per-point speeds above are ratios to each other, chosen so the points
+ * never fall into step. This is the single knob for how fast the whole field
+ * moves.
+ */
+const SPEED = 4.2
+/** Falloff radius of each tone. Larger blends softer. */
 const RADIUS = 0.42
 /** Strength of the fbm domain warp, in UV. */
-const WARP = 0.16
+const WARP = 0.18
 /** Scale of the warp noise. Lower is broader and calmer. */
 const WARP_SCALE = 1.6
+/** How fast the warp field itself churns. */
+const WARP_SPEED = 0.22
 /** Extra warp added at full hover. */
-const HOVER_WARP = 0.09
+const HOVER_WARP = 0.1
 /** Dither amplitude. Enough to break banding, below the threshold of vision. */
 const DITHER = 0.004
-
-/**
- * The type any TSL math operation returns. Accumulators have to be declared as
- * this rather than inferred from their `float(0)` seed, whose narrower
- * `ConstNode` type will not accept the `OperatorNode` an `.add()` produces.
- */
-type MathNode = ReturnType<ReturnType<typeof float>["add"]>
 
 export type MeshGradientOptions = {
   /** 0..1 hover strength; nudges the warp so the field stirs under the cursor. */
@@ -76,28 +78,36 @@ export type MeshGradientOptions = {
 }
 
 /**
- * Animated mesh gradient.
- *
- * Six colour points drift on independent lissajous paths; each pixel is a
- * weighted average of them, with weights falling off by squared distance and
- * normalised so the field stays smooth and fully saturated everywhere. The
- * sample position is domain-warped by fbm first, which is what turns concentric
- * blobs into the folded, marbled shapes a mesh gradient is supposed to have.
- *
- * Colours go through `Color`, which decodes the sRGB hex into the linear
- * working space the shader maths runs in — writing hex-derived floats directly
- * would render noticeably washed out once the renderer re-encodes on output.
+ * The type any TSL math operation returns. Accumulators have to be declared as
+ * this rather than inferred from their `float(0)` seed, whose narrower
+ * `ConstNode` type will not accept the `OperatorNode` an `.add()` produces.
  */
-export function meshGradient({
+type MathNode = ReturnType<ReturnType<typeof float>["add"]>
+
+/**
+ * Animated greyscale mesh gradient.
+ *
+ * Six tone points drift on independent lissajous paths; each pixel is a
+ * weighted average of them, with weights falling off by squared distance and
+ * normalised so the field stays smooth everywhere. The sample position is
+ * domain-warped by fbm first, which is what turns concentric blobs into the
+ * folded, marbled shapes a mesh gradient is supposed to have.
+ *
+ * Returns a builder rather than a node, because the pattern layer has to
+ * evaluate the same field again at halftone cell centres. Colours go through
+ * `Color`, which decodes the sRGB hex into the linear working space the shader
+ * maths runs in.
+ */
+export function createMeshGradient({
   hover,
   aspect,
   palette = GRADIENT_PALETTE,
-}: MeshGradientOptions): Node {
+}: MeshGradientOptions) {
   const colors = palette.map((hex) => uniform(new Color(hex)))
 
-  return Fn(() => {
-    // Correct for the surface's aspect so the blobs are round, not stretched.
-    const uvCoord = vec2(viewportUV.x.mul(float(aspect)), viewportUV.y)
+  /** Evaluates the field at an arbitrary UV. */
+  return (uvCoord: Node): MathNode => {
+    const aspected = vec2(vec2(uvCoord).x.mul(float(aspect)), vec2(uvCoord).y)
 
     /**
      * Domain warp. Two octaves of fbm offset the lookup, so the iso-contours of
@@ -106,24 +116,26 @@ export function meshGradient({
     const warpAmount = float(WARP).add(float(hover).mul(HOVER_WARP))
     const warp = vec2(
       mx_fractal_noise_float(
-        vec3(uvCoord.mul(WARP_SCALE), time.mul(0.05)),
+        vec3(aspected.mul(WARP_SCALE), time.mul(WARP_SPEED * SPEED)),
         2,
         2,
         0.5
       ),
       mx_fractal_noise_float(
-        vec3(uvCoord.mul(WARP_SCALE).add(19.7), time.mul(0.045)),
+        vec3(
+          aspected.mul(WARP_SCALE).add(19.7),
+          time.mul(WARP_SPEED * SPEED * 0.9)
+        ),
         2,
         2,
         0.5
       )
     ).mul(warpAmount)
 
-    const sample = uvCoord.add(warp)
+    const sample = aspected.add(warp)
 
-    // Weighted average over the drifting points. Accumulating colour and weight
-    // separately and dividing at the end keeps the result independent of how
-    // many points happen to overlap here.
+    // Accumulate colour and weight separately and divide at the end, so the
+    // result does not depend on how many points happen to overlap here.
     let weightSum: MathNode = float(0).add(0)
     let colorSum: MathNode = vec3(0).add(0)
 
@@ -131,7 +143,7 @@ export function meshGradient({
       const color = colors[index]
       if (!color) return
 
-      const t = time.mul(point.speed).add(point.phase)
+      const t = time.mul(point.speed * SPEED).add(point.phase)
       const position = vec2(
         float(point.home[0]).add(sin(t).mul(point.drift[0])).mul(float(aspect)),
         float(point.home[1]).add(cos(t.mul(1.3)).mul(point.drift[1]))
@@ -151,24 +163,24 @@ export function meshGradient({
       colorSum = colorSum.add(vec3(color).mul(weight))
     })
 
-    const blended = colorSum.div(weightSum)
+    return colorSum.div(weightSum)
+  }
+}
 
-    /**
-     * Ordered-ish dither.
-     *
-     * Smooth dark gradients band badly in 8-bit output — the slate end of this
-     * palette is exactly where that shows. A sub-LSB noise offset breaks the
-     * contours into stipple the eye integrates away.
-     */
-    const dither = mx_fractal_noise_float(
-      vec3(viewportUV.mul(900), time.mul(2)),
-      1,
-      2,
-      0.5
-    ).mul(DITHER)
-
-    return blended.add(dither)
-  })()
+/**
+ * Sub-LSB noise, added once at the end of a composite.
+ *
+ * Smooth dark gradients band badly in 8-bit output — the dark end of this ramp
+ * is exactly where that shows. Offsetting each pixel slightly breaks the
+ * contours into stipple the eye integrates away.
+ */
+export function dither(): Node {
+  return mx_fractal_noise_float(
+    vec3(viewportUV.mul(900), time.mul(2)),
+    1,
+    2,
+    0.5
+  ).mul(DITHER)
 }
 
 /**
