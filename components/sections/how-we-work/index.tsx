@@ -21,6 +21,7 @@ export function HowWeWork() {
       >
         <MeshGradient />
         <div className="absolute inset-0 bg-solutio-bg/70" />
+        <div aria-hidden className="scrim-corner absolute inset-0" />
 
         <Container className="flex flex-col gap-4 py-12 tablet:pb-14">
           <SectionLabel>How We Work</SectionLabel>

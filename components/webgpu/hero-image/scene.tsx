@@ -20,7 +20,6 @@ import {
 } from "three/tsl"
 import {
   ClampToEdgeWrapping,
-  Color,
   LinearFilter,
   MeshBasicNodeMaterial,
   type Node,
@@ -28,17 +27,9 @@ import {
   type Texture,
   type Vector2,
 } from "three/webgpu"
+import { backgroundColor } from "@/components/webgpu/lib/colors"
 import { heroControls } from "@/components/webgpu/lib/hero-controls"
 import { dither } from "@/components/webgpu/lib/mesh-gradient"
-
-/**
- * Must stay in sync with `--color-solutio-bg`.
- *
- * Built through `Color` rather than written as a raw float: the renderer
- * encodes linear to sRGB on output, so a literal 0.039 in the shader leaves the
- * canvas as #383838 rather than #0A0A0A. `Color` does the sRGB decode for us.
- */
-const BG_HEX = "#0A0A0A"
 
 type SceneProps = {
   map: Texture
@@ -51,9 +42,7 @@ export function Scene({ map, depthMap, resolution, pointer }: SceneProps) {
   const { material, imageAspect } = useMemo(() => {
     const imageAspect = uniform(1)
     const controls = heroControls
-    // `Color` decodes the sRGB hex into the linear working space the shader
-    // maths happens in, so this lands on exactly #0A0A0A after output encoding.
-    const background = uniform(new Color(BG_HEX))
+    const background = backgroundColor
 
     for (const tex of [map, depthMap]) {
       tex.wrapS = ClampToEdgeWrapping

@@ -9,8 +9,14 @@ export function CTA() {
     <Container as="section" id="contact" className="py-12">
       <div className="relative isolate flex min-h-80 tablet:min-h-120 tablet:flex-row flex-col items-start tablet:items-end justify-end tablet:justify-between gap-8 rounded-panel p-8 tablet:p-12">
         <MeshGradient radius={20} />
-        {/* Keeps the copy legible over the gradient's warm, light end. */}
+        {/* Sets the surface's overall level. Kept as a DOM overlay rather than
+            folded into the shader: CSS composites opacity in sRGB while the
+            shader mixes in linear, so the same alpha reads brighter there. */}
         <div className="absolute inset-0 bg-solutio-bg/45" />
+        <div
+          aria-hidden
+          className="scrim-corner absolute inset-0 rounded-panel"
+        />
 
         <div className="relative flex flex-col gap-2">
           <Typography variant="heading-2">Schedule a conversation</Typography>

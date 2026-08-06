@@ -1,14 +1,19 @@
 import { float, luminance, max, mix, pow, uniform, vec3 } from "three/tsl"
 import { Color, type Node } from "three/webgpu"
 
-/** Shipped values for the output grade. Neutral by default — a no-op. */
+/**
+ * Shipped values for the output grade.
+ *
+ * Not neutral: brightness pulls the whole surface well down so the halftone
+ * sits back and the copy over it stays dominant.
+ */
 export const GRADE_DEFAULTS = {
   /** Linear multiplier. 1 leaves the image alone. */
-  brightness: 1,
+  brightness: 0.45,
   /** Expansion around mid-grey. Above 1 pushes darks down and lights up. */
-  contrast: 1,
+  contrast: 1.1,
   /** Power curve. Below 1 lifts shadows, above 1 deepens them. */
-  gamma: 1,
+  gamma: 1.11,
   /** 0 is fully greyscale, 1 leaves saturation alone, above 1 exaggerates. */
   saturation: 1,
   /** How much of the tint colour is applied, 0..1. */

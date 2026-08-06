@@ -39,7 +39,8 @@ function GradientScene({
     })
 
     // Graded after the halftone, so brightness and contrast move the finished
-    // surface rather than only the lit bars.
+    // surface rather than only the lit bars. Readability scrims are CSS
+    // overlays on the section, not shader work — see `scrim-corner`.
     mat.colorNode = Fn(() =>
       grade(
         patterned({
