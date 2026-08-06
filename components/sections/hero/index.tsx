@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/ui/container"
+import { SectionLabel } from "@/components/ui/section-label"
 import { Typography } from "@/components/ui/typography"
 import { HeroImage } from "@/components/webgpu/hero-image"
 
@@ -9,9 +10,9 @@ export function Hero() {
       <HeroImage />
 
       <Container className="z-1 flex flex-col items-center gap-6 tablet:gap-7">
-        <Typography variant="label">
+        <SectionLabel dot={false}>
           Tax Advisory &amp; Strategic Counsel
-        </Typography>
+        </SectionLabel>
 
         <Typography
           variant="heading-1"
