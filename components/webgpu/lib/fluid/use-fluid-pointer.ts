@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef } from "react"
+import { uniform } from "three/tsl"
 import { Vector2 } from "three/webgpu"
 
 /** Seconds for hover strength to reach full, and to return to zero. */
@@ -14,8 +15,15 @@ export type FluidPointer = {
   /** Attach to the element the effect covers. */
   ref: React.RefObject<HTMLDivElement | null>
   /**
-   * Drain the movement accumulated since the last frame, or null if the
-   * pointer has not moved. Returns UV position and UV delta.
+   * Pixel size of the tracked element.
+   *
+   * Measured here rather than read from `useThree().size`, which under a shared
+   * canvas reports the whole viewport rather than this view's rect.
+   */
+  resolution: ReturnType<typeof uniform<Vector2>>
+  /**
+   * Drain the movement accumulated since the last frame, or null if the pointer
+   * has not moved. Returns UV position and UV delta.
    */
   consume: () => { point: Vector2; delta: Vector2; amount: number } | null
   /** Advance the hover fade. Call once per frame. */
@@ -26,13 +34,14 @@ export type FluidPointer = {
  * Pointer tracking for the fluid simulation.
  *
  * Listens on the window and hit-tests the element's rect rather than binding to
- * the element itself: the canvas sits behind the hero copy as a *sibling*, so
- * pointer events over the headline are delivered to the text and never bubble
- * to it. Tracking globally sidesteps the stacking entirely, and keeps the
- * canvas non-interactive so the CTA stays clickable.
+ * the element itself: the effect sits behind the hero copy, so pointer events
+ * over the headline are delivered to the text and never bubble down to it.
+ * Tracking globally sidesteps the stacking, and keeps the surface
+ * non-interactive so the CTA above it stays clickable.
  */
 export function useFluidPointer(): FluidPointer {
   const ref = useRef<HTMLDivElement>(null)
+  const resolution = useMemo(() => uniform(new Vector2(1, 1)), [])
 
   const state = useRef({
     point: new Vector2(0.5, 0.5),
@@ -49,7 +58,11 @@ export function useFluidPointer(): FluidPointer {
     let rect = element.getBoundingClientRect()
     const measure = () => {
       rect = element.getBoundingClientRect()
+      if (rect.width > 0 && rect.height > 0) {
+        resolution.value.set(rect.width, rect.height)
+      }
     }
+    measure()
 
     const onPointerMove = (event: PointerEvent) => {
       if (rect.width === 0 || rect.height === 0) return
@@ -99,11 +112,12 @@ export function useFluidPointer(): FluidPointer {
       window.removeEventListener("resize", measure)
       document.removeEventListener("pointerleave", onPointerLeave)
     }
-  }, [])
+  }, [resolution])
 
   return useMemo(
     () => ({
       ref,
+      resolution,
       consume() {
         const current = state.current
         if (!current.moved) return null
@@ -127,6 +141,6 @@ export function useFluidPointer(): FluidPointer {
         )
       },
     }),
-    []
+    [resolution]
   )
 }

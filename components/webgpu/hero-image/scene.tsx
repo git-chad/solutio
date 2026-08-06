@@ -13,7 +13,7 @@ import {
   oneMinus,
   pow,
   positionGeometry,
-  screenUV,
+  viewportUV,
   smoothstep,
   texture,
   uniform,
@@ -29,7 +29,6 @@ import {
   type Renderer,
   SRGBColorSpace,
   type Texture,
-  Vector2,
 } from "three/webgpu"
 import { candlesBar, candlesCell } from "@/components/webgpu/lib/candles"
 import {
@@ -73,7 +72,6 @@ type SceneProps = {
 }
 
 export function Scene({ map, pointer }: SceneProps) {
-  const size = useThree((state) => state.size)
   // R3F v10 still types `state.gl` as WebGLRenderer even when the canvas is
   // backed by WebGPURenderer. The simulation only calls setRenderTarget and
   // renders a QuadMesh, which both back ends support identically.
@@ -82,8 +80,11 @@ export function Scene({ map, pointer }: SceneProps) {
   const fluid = useMemo(() => createFluidSimulation(CHEAP_FLUID), [])
   useEffect(() => () => fluid.dispose(), [fluid])
 
-  const { material, resolution, imageAspect } = useMemo(() => {
-    const resolution = uniform(new Vector2(1, 1))
+  // The view's own pixel size, measured from the tracked element — under the
+  // shared canvas `useThree().size` is the whole viewport, not this view.
+  const resolution = pointer.resolution
+
+  const { material, imageAspect } = useMemo(() => {
     const imageAspect = uniform(1)
     // `Color` decodes the sRGB hex into the linear working space the shader
     // maths happens in, so this lands on exactly #0A0A0A after output encoding.
@@ -107,7 +108,7 @@ export function Scene({ map, pointer }: SceneProps) {
       const scale = vec2(max(ratio, 1), max(float(1).div(ratio), 1))
       const fitted = vec2(uvCoord).sub(0.5).div(scale).add(0.5)
 
-      // `screenUV` is y-down; the texture is stored y-up.
+      // `viewportUV` is y-down; the texture is stored y-up.
       return vec2(fitted.x, oneMinus(fitted.y))
     }
 
@@ -117,7 +118,7 @@ export function Scene({ map, pointer }: SceneProps) {
 
     /**
      * The fluid's dye field. The simulation's targets are sampled y-up while
-     * `screenUV` is y-down, so the lookup is flipped to match.
+     * `viewportUV` is y-down, so the lookup is flipped to match.
      */
     const dyeAt = (uvCoord: Node) =>
       fluid.dyeNode.sample(vec2(vec2(uvCoord).x, oneMinus(vec2(uvCoord).y))).x
@@ -136,7 +137,7 @@ export function Scene({ map, pointer }: SceneProps) {
     const pattern = () => {
       // Scale the cell with the viewport so the halftone keeps its density.
       const cellSize = float(CELL_SIZE).mul(resolution.y).div(REFERENCE_HEIGHT)
-      const { centre, localX } = candlesCell(screenUV, resolution, cellSize)
+      const { centre, localX } = candlesCell(viewportUV, resolution, cellSize)
 
       const cellColor = photo(centre)
       const cellDye = dyeAt(centre)
@@ -163,7 +164,7 @@ export function Scene({ map, pointer }: SceneProps) {
     material.vertexNode = vec4(positionGeometry.xy, 0, 1)
 
     material.colorNode = Fn(() => {
-      const base = photo(screenUV)
+      const base = photo(viewportUV)
       const { cellColor, bar, presence } = pattern()
 
       // Lit bars are the photo brightened; the gaps drop to the section
@@ -178,7 +179,7 @@ export function Scene({ map, pointer }: SceneProps) {
        * lose contrast however bright the pattern gets.
        */
       const radial = oneMinus(
-        smoothstep(0.05, 0.72, screenUV.sub(0.5).mul(vec2(1, 1.4)).length())
+        smoothstep(0.05, 0.72, viewportUV.sub(0.5).mul(vec2(1, 1.4)).length())
       )
 
       /**
@@ -190,7 +191,7 @@ export function Scene({ map, pointer }: SceneProps) {
        * quickly into the flat background.
        */
       const blend = pow(
-        smoothstep(float(1).sub(BLEND_HEIGHT), 1, screenUV.y),
+        smoothstep(float(1).sub(BLEND_HEIGHT), 1, viewportUV.y),
         BLEND_EASE
       )
 
@@ -200,13 +201,8 @@ export function Scene({ map, pointer }: SceneProps) {
       return mix(plated, background, blend)
     })()
 
-    return { material, resolution, imageAspect }
-  }, [map, fluid])
-
-  useEffect(() => {
-    resolution.value.set(size.width, size.height)
-    fluid.resize(size.width, size.height)
-  }, [resolution, size, fluid])
+    return { material, imageAspect }
+  }, [map, fluid, resolution])
 
   useEffect(() => {
     const image = map.image as { width?: number; height?: number } | undefined
@@ -216,6 +212,8 @@ export function Scene({ map, pointer }: SceneProps) {
   }, [imageAspect, map])
 
   useFrame((_state, delta) => {
+    // Keeps splats circular as the view resizes; cheap enough to just set.
+    fluid.resize(resolution.value.x, resolution.value.y)
     pointer.tick(delta)
 
     const movement = pointer.consume()

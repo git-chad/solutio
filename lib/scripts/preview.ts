@@ -176,6 +176,37 @@ if (hover) {
   await Bun.sleep(Number(flag("settle", "500")))
 }
 
+/**
+ * Scroll to a selector before capturing.
+ *
+ * The canvas is fixed and its Views are scissored to the viewport, so anything
+ * below the fold genuinely is not drawn — a full-page screenshot cannot show
+ * these effects and has to be replaced by scrolling to each one.
+ */
+const scrollTo = flag("scroll", "")
+if (scrollTo) {
+  await send("Runtime.evaluate", {
+    expression: `document.querySelector(${JSON.stringify(scrollTo)})?.scrollIntoView({ block: "center" })`,
+  })
+  // Let the Views re-measure and a few frames land.
+  await Bun.sleep(1200)
+}
+
+/** Run an expression in the page and print the result. For probing the DOM. */
+const evalExpr = flag("eval", "")
+if (evalExpr) {
+  const result = await send("Runtime.evaluate", {
+    expression: evalExpr,
+    returnByValue: true,
+    awaitPromise: true,
+  })
+  const value = (result.result as { value?: unknown } | undefined)?.value
+  console.log("--- eval ---")
+  console.log(
+    typeof value === "string" ? value : JSON.stringify(value, null, 2)
+  )
+}
+
 const shot = await send("Page.captureScreenshot", { format: "png" })
 await mkdir(dirname(out), { recursive: true })
 await Bun.write(out, Buffer.from(String(shot.data), "base64"))

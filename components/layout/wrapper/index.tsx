@@ -7,6 +7,7 @@ import cn from "clsx"
 import { Footer } from "@/components/layout/footer"
 import { Header } from "@/components/layout/header"
 import { Theme, type ThemeName } from "@/components/layout/theme"
+import { SharedCanvas } from "@/components/webgpu/canvas"
 
 /**
  * Props for the Wrapper component.
@@ -48,10 +49,16 @@ export function Wrapper({
 }: WrapperProps) {
   return (
     <Theme theme={theme} global>
+      {/*
+        One canvas for every effect on the page, fixed behind the content.
+        It paints over the body's background colour and under `main`, so any
+        section that stays transparent shows whichever View is tracking it.
+      */}
+      <SharedCanvas />
       <Header />
       <main
         id="main-content"
-        className={cn("relative flex grow flex-col", className)}
+        className={cn("relative z-10 flex grow flex-col", className)}
         {...props}
       >
         {children}

@@ -1,5 +1,6 @@
 import { Container } from "@/components/ui/container"
 import { Image } from "@/components/ui/image"
+import { MeshGradient } from "@/components/webgpu/mesh-gradient"
 import { SectionLabel } from "@/components/ui/section-label"
 import { Typography } from "@/components/ui/typography"
 
@@ -18,14 +19,7 @@ export function HowWeWork() {
         id="how-we-work"
         className="relative mt-section flex tablet:h-120 min-h-80 w-full items-end overflow-clip"
       >
-        <Image
-          src="/images/banner-blur.webp"
-          alt=""
-          fill
-          mobileSize="100vw"
-          desktopSize="100vw"
-          className="object-cover"
-        />
+        <MeshGradient />
         <div className="absolute inset-0 bg-solutio-bg/70" />
 
         <Container className="flex flex-col gap-4 py-12 tablet:pb-14">
